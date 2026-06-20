@@ -39,6 +39,23 @@ npm run dev
 
 打开 `http://localhost:3000`。
 
+## Render Blueprint 部署
+
+本仓库根目录包含 `render.yaml`，可用 Render Blueprint 一键创建两个 public web services：
+
+- `nestcanvas-api`：FastAPI 后端，健康检查 `/healthz`。
+- `nestcanvas-web`：Next.js 前端，面向用户公开访问；前端通过 Render 内网代理 `/api/*` 和 `/storage/*` 到后端。
+
+一键部署链接：
+
+```text
+https://render.com/deploy?repo=https://github.com/ChiZhang-805/NestCanvas-Agent
+```
+
+部署完成后，把 `nestcanvas-web` 的 `https://...onrender.com` 地址分享给用户即可。默认无 `OPENAI_API_KEY` 时会走 deterministic mock；如果要使用真实模型，在 Render Dashboard 里给 `nestcanvas-api` 添加 `OPENAI_API_KEY` 等环境变量后重新部署。
+
+注意：当前 Blueprint 使用 Render free plan 和本地 SQLite/文件存储，适合公开 demo。免费服务可能休眠，且重启/重新部署后上传文件和 SQLite 状态不保证长期保留；生产版应改接 Render Postgres/对象存储或外部数据库。
+
 ## 环境变量
 
 `.env.example` 包含：

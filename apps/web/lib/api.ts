@@ -32,7 +32,7 @@ const configuredApiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
 
 export const API_BASE = configuredApiBase
   ? configuredApiBase.replace(/\/$/, "")
-  : "http://localhost:8000";
+  : "";
 
 export const OPENAI_API_KEY_STORAGE_KEY = "nestcanvas.openai_api_key";
 
