@@ -1,0 +1,90 @@
+{
+  "version": "1.0",
+  "unit": "m",
+  "scale_m_per_px": 0.025,
+  "boundary": [[0, 0], [9.8, 0], [9.8, 7.2], [0, 7.2], [0, 0]],
+  "rooms": [
+    {
+      "id": "room_living_1",
+      "room_type": "living_room",
+      "polygon": [[0.2, 0.2], [4.8, 0.2], [4.8, 3.9], [0.2, 3.9], [0.2, 0.2]],
+      "area_m2": 17.02,
+      "confidence": 0.86
+    },
+    {
+      "id": "room_kitchen_dining_1",
+      "room_type": "dining_room",
+      "polygon": [[5.0, 0.2], [9.6, 0.2], [9.6, 3.0], [5.0, 3.0], [5.0, 0.2]],
+      "area_m2": 12.88,
+      "confidence": 0.82
+    },
+    {
+      "id": "room_master_bedroom_1",
+      "room_type": "master_bedroom",
+      "polygon": [[0.2, 4.1], [4.9, 4.1], [4.9, 7.0], [0.2, 7.0], [0.2, 4.1]],
+      "area_m2": 13.63,
+      "confidence": 0.84
+    },
+    {
+      "id": "room_bedroom_2",
+      "room_type": "bedroom",
+      "polygon": [[5.1, 4.1], [7.6, 4.1], [7.6, 7.0], [5.1, 7.0], [5.1, 4.1]],
+      "area_m2": 7.25,
+      "confidence": 0.8
+    },
+    {
+      "id": "room_bathroom_1",
+      "room_type": "bathroom",
+      "polygon": [[7.8, 4.1], [9.6, 4.1], [9.6, 5.8], [7.8, 5.8], [7.8, 4.1]],
+      "area_m2": 3.06,
+      "confidence": 0.75
+    }
+  ],
+  "walls": [
+    {
+      "id": "wall_outer_south",
+      "centerline": [[0, 0], [9.8, 0]],
+      "thickness_m": 0.18,
+      "confidence": 0.78,
+      "load_bearing_status": "unknown"
+    }
+  ],
+  "doors": [
+    {
+      "id": "door_entry_1",
+      "type": "door",
+      "wall_id": "wall_outer_south",
+      "bbox": [[0.8, 0.18], [1.7, 0.18], [1.7, 0.32], [0.8, 0.32], [0.8, 0.18]],
+      "width_m": 0.9,
+      "swing_direction": "inward"
+    },
+    {
+      "id": "door_master_1",
+      "type": "door",
+      "wall_id": null,
+      "bbox": [[0.35, 4.08], [1.15, 4.08], [1.15, 4.22], [0.35, 4.22], [0.35, 4.08]],
+      "width_m": 0.8,
+      "swing_direction": "inward"
+    },
+    {
+      "id": "door_bedroom_2",
+      "type": "door",
+      "wall_id": null,
+      "bbox": [[5.2, 4.08], [5.95, 4.08], [5.95, 4.22], [5.2, 4.22], [5.2, 4.08]],
+      "width_m": 0.75,
+      "swing_direction": "inward"
+    }
+  ],
+  "windows": [
+    {
+      "id": "window_living_balcony",
+      "type": "window",
+      "wall_id": null,
+      "bbox": [[3.0, 3.85], [4.5, 3.85], [4.5, 4.0], [3.0, 4.0], [3.0, 3.85]],
+      "width_m": 1.5,
+      "swing_direction": null
+    }
+  ],
+  "warnings": ["MVP fallback floorplan; please calibrate scale."],
+  "confidence": 0.62
+}

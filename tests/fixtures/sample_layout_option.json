@@ -1,0 +1,25 @@
+{
+  "id": "option_balanced_storage_fixture",
+  "strategy": "balanced_storage",
+  "furniture_items": [
+    {
+      "id": "fur_sofa_fixture",
+      "category": "sofa",
+      "room_id": "room_living_1",
+      "bbox": [[0.55, 2.7], [2.65, 2.7], [2.65, 3.55], [0.55, 3.55], [0.55, 2.7]],
+      "rotation_deg": 0,
+      "dimensions_m": [2.1, 0.85],
+      "clearance_m": 0.6,
+      "material_hint": "linen fabric"
+    }
+  ],
+  "score": 92,
+  "hard_errors": [],
+  "soft_warnings": [],
+  "metrics": {
+    "generated_items": 1,
+    "rooms_furnished": 1,
+    "storage_units": 0,
+    "total_furniture_area_m2": 1.79
+  }
+}

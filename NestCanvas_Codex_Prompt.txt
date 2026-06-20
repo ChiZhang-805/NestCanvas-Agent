@@ -1,0 +1,138 @@
+你是资深 AI 全栈工程师 + 空间计算工程师。请在当前空仓库中实现 `NestCanvas-Agent`（栖画智能体）MVP，目标运行环境为 WSL2 Ubuntu 22.04。请直接创建可运行代码、测试、fixtures、README，不要只写说明。
+
+# 0. 产品目标
+NestCanvas Agent（栖画）是面向买房/装修用户的 C 端 AI 家居设计画布。用户上传户型图、手绘草图或房间照片后，系统生成可校正的 2D FloorPlan JSON；用户通过自然语言表达需求，系统抽取结构化 DesignBrief；本地布局引擎生成 2-3 套可校验家具方案；OpenAI 只负责视觉理解、结构化抽取、渲染提示词生成和概念图生成，不直接决定最终几何。
+
+# 1. 强制技术栈
+- Monorepo：`NestCanvas-Agent/`
+- 后端：FastAPI + Pydantic v2 + SQLAlchemy 2 + Alembic + PostgreSQL 16 + Redis/RQ + OpenAI Python SDK + Pillow + OpenCV headless + Shapely + python-multipart + pytest。
+- 前端：Next.js App Router + TypeScript + Tailwind + Zustand + zod + SVG/Canvas。不要引入复杂 UI 框架；保持可读可改。
+- 基础设施：`infra/docker-compose.yml` 启动 postgres:16 和 redis:7。
+- Python 3.10+，Node.js 20+。
+
+# 2. 仓库结构
+请创建：
+NestCanvas-Agent/
+  apps/api/
+    app/main.py
+    app/core/config.py
+    app/db/
+    app/models/
+    app/schemas/
+    app/routes/
+    app/services/openai_service.py
+    app/services/geometry_service.py
+    app/services/layout_service.py
+    app/services/render_prompt_service.py
+    app/workers/jobs.py
+    tests/
+  apps/web/
+    app/
+    components/
+    lib/api.ts
+    lib/types.ts
+    store/
+  packages/schemas/
+    floorplan.schema.json
+    design_brief.schema.json
+  tests/fixtures/
+    simple_2br_floorplan.json
+    sample_design_brief.json
+    sample_layout_option.json
+  infra/docker-compose.yml
+  .env.example
+  README.md
+
+# 3. 核心数据模型
+实现以下 Pydantic schema，并在 API 中复用：
+- Project：id, title, created_at, status。
+- Asset：id, project_id, asset_type=image|pdf|render|export, local_path, mime_type, width, height, metadata。
+- FloorPlan：version, unit=m, scale_m_per_px, boundary, rooms, walls, doors, windows, warnings, confidence。
+- Room：id, room_type, polygon, area_m2, confidence。
+- Wall：id, centerline, thickness_m, confidence, load_bearing_status=unknown|user_marked_load_bearing|user_marked_non_load_bearing。
+- DoorWindow：id, type=door|window, wall_id, bbox, width_m, swing_direction。
+- DesignBrief：style, budget_cny, residents, room_priorities, must_have, avoid, storage_level, color_palette, constraints。
+- FurnitureItem：id, category, room_id, bbox, rotation_deg, dimensions_m, clearance_m, material_hint。
+- LayoutOption：id, strategy, furniture_items, score, hard_errors, soft_warnings, metrics。
+- RenderJob/RenderAsset：status, prompt, input_option_id, output_path, disclaimer。
+
+# 4. 后端 API
+必须实现并能通过 pytest happy path：
+1. `POST /api/projects`：创建项目。
+2. `POST /api/projects/{project_id}/assets`：上传图片/PDF，保存到 `storage/`，写 DB。
+3. `POST /api/projects/{project_id}/parse-floorplan`：创建 RQ job；MVP 用 OpenCV 边缘/轮廓检测 + fallback fixture 生成 FloorPlan。必须返回 job_id。
+4. `GET /api/jobs/{job_id}`：返回 status、stage、progress、result_id、error。
+5. `GET /api/projects/{project_id}`：返回项目聚合视图。
+6. `GET /api/floorplans/{floorplan_id}`。
+7. `PATCH /api/floorplans/{floorplan_id}`：保存用户校正后的 FloorPlan JSON。
+8. `POST /api/projects/{project_id}/brief`：输入自然语言，调用 `openai_service.parse_design_brief()`，使用 Structured Outputs/Pydantic JSON Schema；无 OPENAI_API_KEY 时 deterministic mock。
+9. `POST /api/projects/{project_id}/layout-options`：基于 FloorPlan + DesignBrief，用 Shapely 和规则引擎生成 2-3 套方案：balanced_storage、open_living、family_friendly。
+10. `POST /api/layout-options/{option_id}/render`：生成概念图。无 OPENAI_API_KEY 时返回本地 mock SVG/PNG。真实调用封装在 `openai_service.generate_interior_image()`。
+11. `GET /api/projects/{project_id}/renders`。
+
+# 5. 几何与布局要求
+不要让 LLM 直接输出家具坐标。必须实现：
+- `normalize_polygon(points)`：修复方向、闭合、重复点。
+- `polygon_area_m2(points)`。
+- `bbox_polygon(x, y, w, h, rotation_deg)`。
+- `detect_collisions(furniture_items, walls, rooms)`。
+- `detect_door_blocking(furniture_items, doors)`。
+- `min_clearance_check(furniture_items, room_polygon, threshold_m)`。
+- `score_layout(option)`：硬错误直接严重扣分；软风险保留 warning。
+
+家具规则至少包含：
+- living_room：sofa, coffee_table, tv_console, bookshelf 可选。
+- bedroom：bed, wardrobe, nightstand。
+- dining_room/kitchen：dining_table 或 counter。
+- bathroom：MVP 可只展示固定设施，不做生成。
+
+# 6. OpenAI 使用边界
+所有 OpenAI 调用只能在 `apps/api/app/services/openai_service.py` 中出现。模型名从环境变量读取：
+- `OPENAI_MODEL_TEXT` 默认 `gpt-5.5`。
+- `OPENAI_MODEL_FAST` 默认 `gpt-5.4-mini`。
+- `OPENAI_IMAGE_MODEL` 默认 `gpt-image-2`。
+实现以下函数：
+- `analyze_floorplan_image(image_path) -> FloorPlanHints`：可先返回 mock，但接口保留。
+- `parse_design_brief(user_text) -> DesignBrief`：严格 schema。
+- `build_render_prompt(floorplan, layout_option, design_brief) -> str`。
+- `generate_interior_image(prompt, reference_image_path=None) -> RenderAsset`。
+如果没有 key，所有函数必须 deterministic mock，保证测试和本地演示可跑。
+
+# 7. 前端页面
+使用 Next.js App Router，实现：
+1. `/`：产品首页 + 创建项目按钮，品牌名显示 `NestCanvas Agent（栖画）`。
+2. `/projects/[id]/upload`：上传图片，预览，触发解析，轮询 job。
+3. `/projects/[id]/floorplan`：2D SVG 展示 rooms/walls/doors/windows；允许编辑房间类型、比例尺、保存。
+4. `/projects/[id]/brief`：聊天式输入需求，展示结构化 DesignBrief。
+5. `/projects/[id]/options`：展示 2-3 套布局方案，SVG 叠加家具，显示 score、hard_errors、soft_warnings。
+6. `/projects/[id]/renders`：显示概念图，固定提示：`概念效果图仅用于灵感展示，尺寸和可施工性以平面图校正结果为准。`
+
+# 8. 测试
+必须提供 pytest：
+- FloorPlan schema valid。
+- DesignBrief mock parse。
+- furniture collision detection。
+- door blocking detection。
+- layout generation returns >=2 options。
+- API happy path：创建项目 -> 上传 fixture -> parse job mock -> brief -> layout。
+前端至少提供 TypeScript 类型检查脚本；README 写明如何运行。
+
+# 9. README 与启动命令
+README 必须包含：
+- 产品定位。
+- WSL2 Ubuntu 22.04 启动步骤。
+- `.env.example` 说明。
+- 后端命令：创建 venv、pip install、alembic upgrade、uvicorn。
+- 前端命令：npm install、npm run dev。
+- 测试命令：pytest。
+- “已实现功能”。
+- “限制与后续替换点”。
+- “OpenAI API 使用位置”。
+
+# 10. 代码质量
+- 不要提交真实 API Key。
+- 不要把 OpenAI 调用散落在 route 中。
+- 错误响应要清晰。
+- 所有坐标单位统一为米。
+- 所有生成图都带 disclaimer。
+- 先实现能跑通的最小闭环，再补测试并修复失败。

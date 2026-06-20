@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nestcanvas.local/schemas/floorplan.schema.json",
+  "title": "NestCanvas FloorPlan",
+  "type": "object",
+  "required": ["version", "unit", "scale_m_per_px", "boundary", "rooms", "walls", "doors", "windows", "warnings", "confidence"],
+  "properties": {
+    "version": {"type": "string"},
+    "unit": {"const": "m"},
+    "scale_m_per_px": {"type": "number", "exclusiveMinimum": 0},
+    "boundary": {"$ref": "#/$defs/polygon"},
+    "rooms": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/room"}
+    },
+    "walls": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/wall"}
+    },
+    "doors": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/opening"}
+    },
+    "windows": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/opening"}
+    },
+    "warnings": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+  },
+  "$defs": {
+    "point": {
+      "type": "array",
+      "prefixItems": [{"type": "number"}, {"type": "number"}],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "polygon": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/point"},
+      "minItems": 4
+    },
+    "room": {
+      "type": "object",
+      "required": ["id", "room_type", "polygon", "area_m2", "confidence"],
+      "properties": {
+        "id": {"type": "string"},
+        "room_type": {"type": "string"},
+        "polygon": {"$ref": "#/$defs/polygon"},
+        "area_m2": {"type": "number", "minimum": 0},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "wall": {
+      "type": "object",
+      "required": ["id", "centerline", "thickness_m", "confidence", "load_bearing_status"],
+      "properties": {
+        "id": {"type": "string"},
+        "centerline": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/point"},
+          "minItems": 2
+        },
+        "thickness_m": {"type": "number", "exclusiveMinimum": 0},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "load_bearing_status": {
+          "enum": ["unknown", "user_marked_load_bearing", "user_marked_non_load_bearing"]
+        }
+      }
+    },
+    "opening": {
+      "type": "object",
+      "required": ["id", "type", "bbox", "width_m"],
+      "properties": {
+        "id": {"type": "string"},
+        "type": {"enum": ["door", "window"]},
+        "wall_id": {"type": ["string", "null"]},
+        "bbox": {"$ref": "#/$defs/polygon"},
+        "width_m": {"type": "number", "exclusiveMinimum": 0},
+        "swing_direction": {"type": ["string", "null"]}
+      }
+    }
+  }
+}

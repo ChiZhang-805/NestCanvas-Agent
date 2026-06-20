@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nestcanvas.local/schemas/design_brief.schema.json",
+  "title": "NestCanvas DesignBrief",
+  "type": "object",
+  "required": ["style", "residents", "room_priorities", "must_have", "avoid", "storage_level", "color_palette", "constraints"],
+  "properties": {
+    "style": {"type": "string"},
+    "budget_cny": {"type": ["integer", "null"], "minimum": 0},
+    "residents": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "room_priorities": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "must_have": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "avoid": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "storage_level": {"enum": ["low", "medium", "high"]},
+    "color_palette": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "constraints": {
+      "type": "array",
+      "items": {"type": "string"}
+    }
+  }
+}

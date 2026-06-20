@@ -1,0 +1,11 @@
+{
+  "style": "warm_wood_minimal",
+  "budget_cny": 200000,
+  "residents": ["couple", "child"],
+  "room_priorities": ["living_room", "master_bedroom"],
+  "must_have": ["large_bookshelf", "more_storage"],
+  "avoid": ["dark_palette", "heavy_luxury"],
+  "storage_level": "high",
+  "color_palette": ["warm white", "oak", "linen"],
+  "constraints": ["keep existing walls", "do not block balcony door"]
+}
