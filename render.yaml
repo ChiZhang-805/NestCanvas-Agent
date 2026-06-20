@@ -3,9 +3,8 @@ services:
     name: nestcanvas-api
     runtime: python
     plan: free
-    rootDir: apps/api
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    buildCommand: pip install -r apps/api/requirements.txt
+    startCommand: PYTHONPATH=apps/api uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /healthz
     autoDeployTrigger: commit
     envVars:
