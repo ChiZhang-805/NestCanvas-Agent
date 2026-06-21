@@ -52,7 +52,7 @@ npm run dev
 https://render.com/deploy?repo=https://github.com/ChiZhang-805/NestCanvas-Agent
 ```
 
-部署完成后，把 `nestcanvas-web` 的 `https://...onrender.com` 地址分享给用户即可。默认无 `OPENAI_API_KEY` 时会走 deterministic mock；如果要使用真实模型，在 Render Dashboard 里给 `nestcanvas-api` 添加 `OPENAI_API_KEY` 等环境变量后重新部署。
+部署完成后，把 `nestcanvas-web` 的 `https://...onrender.com` 地址分享给用户即可。默认无 Key 时会走 deterministic mock；用户可以直接在网页里的 **OpenAI API Key** 面板填写自己的 Key。Key 只保存在当前浏览器 localStorage，并通过 `X-OpenAI-API-Key` 请求头临时发送给 API。Render Dashboard 里的 `OPENAI_API_KEY` 只是可选的站主预置方式，不是必需。
 
 注意：当前 Blueprint 使用 Render free plan 和本地 SQLite/文件存储，适合公开 demo。免费服务可能休眠，且重启/重新部署后上传文件和 SQLite 状态不保证长期保留；生产版应改接 Render Postgres/对象存储或外部数据库。
 
