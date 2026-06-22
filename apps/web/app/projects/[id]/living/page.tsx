@@ -138,48 +138,46 @@ export default function LivingPlanPage({ params }: { params: { id: string } }) {
               <ShoppingBag size={18} className="text-tide" aria-hidden="true" />
               <h2 className="text-lg font-bold text-ink">采购优先级</h2>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[820px] border-collapse text-sm">
-                <thead>
-                  <tr className="border-b border-ink/10 text-left text-xs uppercase text-ink/50">
-                    <th className="py-3 pr-3">项目</th>
-                    <th className="py-3 pr-3">空间</th>
-                    <th className="py-3 pr-3">尺寸</th>
-                    <th className="py-3 pr-3">预算</th>
-                    <th className="py-3 pr-3">关键词</th>
-                    <th className="py-3 pr-3">原因</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {plan.shopping_items.map((item, index) => (
-                    <tr key={`${item.room_id}-${item.category}-${index}`} className="border-b border-ink/8 align-top">
-                      <td className="py-3 pr-3">
-                        <div className="flex flex-col gap-2">
-                          <span className="font-bold text-ink">{item.label}</span>
-                          <span className={`w-fit rounded-md px-2 py-1 text-xs font-bold ${priorityClass(item.priority)}`}>
-                            {priorityLabel(item.priority)}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="py-3 pr-3 text-ink/70">{item.room_type}</td>
-                      <td className="py-3 pr-3 text-ink/70">
+            <div className="grid gap-3">
+              {plan.shopping_items.map((item, index) => (
+                <article
+                  key={`${item.room_id}-${item.category}-${index}`}
+                  className="rounded-md border border-ink/8 bg-cloud/35 p-3"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="break-words text-sm font-bold text-ink">{item.label}</h3>
+                      <p className="mt-1 text-xs font-semibold text-ink/58">{item.room_type}</p>
+                    </div>
+                    <span className={`shrink-0 rounded-md px-2 py-1 text-xs font-bold ${priorityClass(item.priority)}`}>
+                      {priorityLabel(item.priority)}
+                    </span>
+                  </div>
+                  <div className="mt-3 grid gap-2 text-sm sm:grid-cols-3">
+                    <div>
+                      <p className="text-xs font-bold uppercase text-ink/45">尺寸</p>
+                      <p className="mt-1 font-semibold text-ink/72">
                         {item.dimensions_m[0].toFixed(2)} x {item.dimensions_m[1].toFixed(2)} m
-                      </td>
-                      <td className="py-3 pr-3 font-semibold text-ink">{priceRange(item.estimated_price_cny_low, item.estimated_price_cny_high)}</td>
-                      <td className="py-3 pr-3">
-                        <div className="flex flex-wrap gap-1">
-                          {item.search_keywords.slice(0, 4).map((keyword) => (
-                            <span key={keyword} className="rounded-md bg-cloud px-2 py-1 text-xs font-semibold text-ink/65">
-                              {keyword}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="py-3 pr-3 text-ink/68">{item.why}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold uppercase text-ink/45">预算</p>
+                      <p className="mt-1 font-bold text-ink">{priceRange(item.estimated_price_cny_low, item.estimated_price_cny_high)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold uppercase text-ink/45">关键词</p>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {item.search_keywords.slice(0, 4).map((keyword) => (
+                          <span key={keyword} className="rounded-md bg-white px-2 py-1 text-xs font-semibold text-ink/65">
+                            {keyword}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="mt-3 break-words text-sm leading-6 text-ink/68">{item.why}</p>
+                </article>
+              ))}
             </div>
           </section>
 

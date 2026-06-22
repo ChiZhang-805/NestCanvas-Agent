@@ -15,8 +15,8 @@ export function PageShell({
   children: React.ReactNode;
 }) {
   return (
-    <main className="min-h-screen bg-[#f2f4f1]">
-      <header className="sticky top-0 z-30 border-b border-ink/10 bg-white/86 backdrop-blur">
+    <main className="flex h-[100svh] min-h-0 flex-col overflow-hidden bg-[#f2f4f1]">
+      <header className="z-30 shrink-0 border-b border-ink/10 bg-white/86 backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <Link href="/" className="focus-ring inline-flex items-center gap-2 rounded-md text-ink">
             <Home size={18} aria-hidden="true" />
@@ -25,7 +25,7 @@ export function PageShell({
           <StepNav projectId={projectId} current={current} />
         </div>
       </header>
-      <section className="mx-auto max-w-7xl px-5 py-7">
+      <section data-shell-content className="mx-auto min-h-0 w-full max-w-7xl flex-1 overflow-y-auto overflow-x-hidden px-5 py-7">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-xs font-bold uppercase text-clay">Project studio</p>

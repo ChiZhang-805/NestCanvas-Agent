@@ -279,15 +279,7 @@ export default function HomePage() {
           })}
         </div>
 
-        <div
-          className="absolute max-w-[760px]"
-          style={{
-            left: "clamp(180px, 16vw, 340px)",
-            top: "46%",
-            transform: "translateY(-50%)",
-            zIndex: 60
-          }}
-        >
+        <div className="absolute left-5 right-5 top-[46%] z-[60] max-w-[760px] -translate-y-1/2 sm:left-8 sm:right-8 xl:left-[clamp(180px,16vw,340px)] xl:right-auto">
           <div
             className="pointer-events-none absolute rounded-md bg-white/38 blur-xl"
             style={{
