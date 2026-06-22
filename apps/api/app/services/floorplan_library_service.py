@@ -154,6 +154,18 @@ DATASET_SOURCES = [
         ],
     ),
     FloorPlanDatasetSource(
+        id="floorplancad",
+        name="FloorPlanCAD",
+        url="https://huggingface.co/datasets/Voxel51/FloorPlanCAD",
+        license="CC BY-SA 4.0 metadata page; dataset card also notes non-commercial source context.",
+        commercial_use="restricted",
+        recommended_use="Real CAD/floorplan image retrieval samples and symbol spotting experiments.",
+        notes=[
+            "Hugging Face hosted image dataset with thousands of rasterized CAD/floorplan samples.",
+            "Good lightweight source for seeding the visual retrieval gallery before CubiCasa5K finishes downloading.",
+        ],
+    ),
+    FloorPlanDatasetSource(
         id="nestcanvas_seed",
         name="NestCanvas Seed Templates",
         url="local://nestcanvas/seed-floorplans",
@@ -476,7 +488,7 @@ def search_floorplan_library(
             )
         )
 
-    return sorted(results, key=lambda item: item.match_score, reverse=True)[: max(1, min(limit, 50))]
+    return sorted(results, key=lambda item: item.match_score, reverse=True)[: max(1, min(limit, 120))]
 
 
 def get_floorplan_template(template_id: str) -> FloorPlanLibraryItem | None:

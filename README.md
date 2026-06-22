@@ -129,7 +129,8 @@ npm run typecheck
 当前产品内置的是 NestCanvas synthetic seed templates，没有复制外部数据。适合先验证用户检索流程、筛选字段和模板写入能力。本项目不是商业模板库，外部数据的 license 字段主要用于来源追溯、归属和样本治理。后续可接入的数据源：
 
 - RPLAN：适合做大规模住宅户型检索、面积/房间数/邻接关系统计；作为研究候选源时保留原始来源和版本信息。
-- CubiCasa5K：5k 户型图和语义标注，适合训练/评估户型解析模型；官方 Zenodo 页面标注为 CC BY-NC-SA 4.0。
+- CubiCasa5K：5k 户型图和语义标注，适合训练/评估户型解析模型；官方 Zenodo 页面标注为 CC BY-NC-SA 4.0。当前网络下官方 5.2GB zip 下载较慢，保留为后续可恢复下载候选。
+- FloorPlanCAD：Hugging Face 托管的 CAD/户型 PNG 数据源；当前已下载完整 997 张到公共 raw 目录，并抽取 100 张进入产品检索库。
 - Swiss Dwellings：Zenodo 页面为 CC BY 4.0，适合参考更丰富的住宅指标检索方式，例如几何、采光、噪声、可达性等。
 
 推荐数据处理流水线：下载原始数据 -> 转换为统一 `FloorPlan` JSON -> 提取 `area_m2 / bedrooms / bathrooms / room_types / tags / source_license` -> 生成 preview -> 进入 `/api/floorplan-library` 检索索引。

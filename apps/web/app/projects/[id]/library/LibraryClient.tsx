@@ -72,7 +72,7 @@ export function LibraryClient({
         minArea: optionalPositiveNumber(minArea),
         maxArea: optionalPositiveNumber(maxArea),
         dataset: dataset || undefined,
-        limit: 48
+        limit: 100
       });
       setItems(response.items);
       setSources(response.sources);

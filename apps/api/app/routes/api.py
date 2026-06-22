@@ -181,7 +181,7 @@ def search_floorplan_templates(
     max_area: float | None = Query(default=None, ge=0),
     dataset: str | None = Query(default=None, max_length=80),
     tags: str | None = Query(default=None, max_length=160),
-    limit: int = Query(default=12, ge=1, le=50),
+    limit: int = Query(default=12, ge=1, le=120),
 ) -> FloorPlanLibrarySearchResponse:
     return FloorPlanLibrarySearchResponse(
         sources=list_dataset_sources(),

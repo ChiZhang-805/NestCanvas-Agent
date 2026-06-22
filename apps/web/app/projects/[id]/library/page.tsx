@@ -10,7 +10,7 @@ async function loadInitialLibrary(): Promise<FloorPlanLibrarySearchResponse & { 
     const response = await searchFloorplanLibrary({
       query: "一家三口 收纳",
       bedrooms: 2,
-      limit: 12
+      limit: 100
     });
     return { ...response, message: null };
   } catch (caught) {

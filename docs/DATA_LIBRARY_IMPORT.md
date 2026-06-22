@@ -2,7 +2,7 @@
 
 ## 当前数据
 
-当前 `/api/floorplan-library` 有 6 个内部结构化 seed 户型，可直接在“检索户型库”页面检索、预览、写入项目。
+当前 `/api/floorplan-library` 有 6 个内部结构化 seed 户型，并已导入 100 张 FloorPlanCAD 真实户型/CAD 图片样本，可直接在“检索户型库”页面检索、预览、写入项目。
 
 本轮已新增 manifest 扩展能力：把小样本写入 `apps/api/app/data/floorplan_library/manifest.json` 后，后端会自动合并检索。缩略图放在 `apps/api/app/data/floorplan_library/assets/`，通过 `/library-assets/floorplans/...` 访问。
 
@@ -12,7 +12,7 @@
 
 - 官方数据约 5.5GB，包含 5000 张户型图和语义标注。
 - 适合做“图像式户型检索”和视觉解析验证。
-- 不建议把完整 zip 放进 GitHub；先下载到 `data/raw/cubicasa5k/`，抽 100 张压缩图和结构化结果进 manifest。
+- 不建议把完整 zip 放进 GitHub；先下载到 `/home/chi/Project/data/raw/nestcanvas/cubicasa5k/`，抽 100 张压缩图和结构化结果进 manifest。
 
 2. Swiss Dwellings
 
@@ -27,10 +27,11 @@
 
 ## 导入流程
 
-1. 把原始数据下载到仓库根目录：
+1. 把原始数据下载到工作区公共目录，不放进 Git 仓库：
 
 ```bash
-mkdir -p data/raw/cubicasa5k
+mkdir -p /home/chi/Project/data/raw/nestcanvas/cubicasa5k
+mkdir -p /home/chi/Project/data/raw/nestcanvas/floorplancad
 ```
 
 2. 抽取小样本：
@@ -61,3 +62,23 @@ apps/api/app/data/floorplan_library/
 - Text reasoning：把用户自然语言需求扩展为检索标签，例如“一家三口 + 老人偶住”扩展为 `two_bedroom`、`guest_room`、`storage`。
 - Similarity rerank：先用结构化条件召回，再让模型解释“为什么这个户型更适合”。
 - Batch curator：批量检查外部样本是否缺字段、面积异常、房间闭合失败。
+
+## 当前本地原始数据位置
+
+```text
+/home/chi/Project/data/raw/nestcanvas/floorplancad/
+  data/                 # 997 张原始 FloorPlanCAD PNG
+  huggingface_tree.json
+  selected_100.json
+
+/home/chi/Project/data/raw/nestcanvas/cubicasa5k/
+  cubicasa5k.zip        # 可恢复下载残片；官方 Zenodo 当前网络很慢
+```
+
+产品检索样本位置：
+
+```text
+apps/api/app/data/floorplan_library/
+  manifest.json         # 100 条 FloorPlanCAD 样本记录
+  assets/               # 100 张压缩后的检索缩略图
+```
