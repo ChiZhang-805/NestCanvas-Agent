@@ -17,19 +17,59 @@ DISCLAIMER = "概念效果图仅用于灵感展示，尺寸和可施工性以平
 _request_openai_api_key: ContextVar[str | None] = ContextVar(
     "request_openai_api_key", default=None
 )
+_request_openai_model_text: ContextVar[str | None] = ContextVar(
+    "request_openai_model_text", default=None
+)
+_request_openai_model_fast: ContextVar[str | None] = ContextVar(
+    "request_openai_model_fast", default=None
+)
+_request_openai_model_image: ContextVar[str | None] = ContextVar(
+    "request_openai_model_image", default=None
+)
 
 
-def set_request_openai_api_key(api_key: str | None) -> Token[str | None]:
-    cleaned = api_key.strip() if api_key else None
-    return _request_openai_api_key.set(cleaned or None)
+def _clean_override(value: str | None) -> str | None:
+    cleaned = value.strip() if value else None
+    return cleaned or None
 
 
-def reset_request_openai_api_key(token: Token[str | None]) -> None:
-    _request_openai_api_key.reset(token)
+def set_request_openai_overrides(
+    api_key: str | None,
+    model_text: str | None,
+    model_fast: str | None,
+    model_image: str | None,
+) -> tuple[Token[str | None], Token[str | None], Token[str | None], Token[str | None]]:
+    return (
+        _request_openai_api_key.set(_clean_override(api_key)),
+        _request_openai_model_text.set(_clean_override(model_text)),
+        _request_openai_model_fast.set(_clean_override(model_fast)),
+        _request_openai_model_image.set(_clean_override(model_image)),
+    )
+
+
+def reset_request_openai_overrides(
+    tokens: tuple[Token[str | None], Token[str | None], Token[str | None], Token[str | None]]
+) -> None:
+    _request_openai_api_key.reset(tokens[0])
+    _request_openai_model_text.reset(tokens[1])
+    _request_openai_model_fast.reset(tokens[2])
+    _request_openai_model_image.reset(tokens[3])
 
 
 def _api_key() -> str | None:
     return _request_openai_api_key.get() or get_settings().openai_api_key
+
+
+def _text_model() -> str:
+    return _request_openai_model_text.get() or get_settings().openai_model_text
+
+
+def _fast_model() -> str:
+    return _request_openai_model_fast.get() or get_settings().openai_model_fast
+
+
+def _image_model() -> str:
+    return _request_openai_model_image.get() or get_settings().openai_image_model
 
 
 def _has_key() -> bool:
@@ -39,15 +79,22 @@ def _has_key() -> bool:
 def openai_runtime_status() -> dict[str, object]:
     settings = get_settings()
     request_key = _request_openai_api_key.get()
-    source = "browser" if request_key else "env" if settings.openai_api_key else "mock"
+    request_model = any(
+        (
+            _request_openai_model_text.get(),
+            _request_openai_model_fast.get(),
+            _request_openai_model_image.get(),
+        )
+    )
+    source = "browser" if request_key or request_model else "env" if settings.openai_api_key else "mock"
     return {
         "active": bool(request_key or settings.openai_api_key),
         "source": source,
         "env_key_configured": bool(settings.openai_api_key),
         "request_key_configured": bool(request_key),
-        "text_model": settings.openai_model_text,
-        "fast_model": settings.openai_model_fast,
-        "image_model": settings.openai_image_model,
+        "text_model": _text_model(),
+        "fast_model": _fast_model(),
+        "image_model": _image_model(),
     }
 
 
@@ -67,7 +114,7 @@ def analyze_floorplan_image(image_path: str) -> dict:
             encoded = base64.b64encode(image_file.read()).decode("utf-8")
         mime_type = mimetypes.guess_type(image_path)[0] or "image/png"
         response = client.responses.create(
-            model=get_settings().openai_model_fast,
+            model=_fast_model(),
             input=[
                 {
                     "role": "user",
@@ -149,7 +196,7 @@ def parse_design_brief(user_text: str) -> DesignBrief:
 
         client = OpenAI(api_key=_api_key())
         response = client.responses.parse(
-            model=get_settings().openai_model_text,
+            model=_text_model(),
             input=[
                 {
                     "role": "system",
@@ -202,7 +249,7 @@ def review_design_options(
         client = OpenAI(api_key=_api_key())
         option_ids = {option.id for option in layout_options}
         response = client.responses.parse(
-            model=get_settings().openai_model_text,
+            model=_text_model(),
             input=[
                 {
                     "role": "system",
@@ -283,7 +330,7 @@ def generate_interior_image(
 
         client = OpenAI(api_key=_api_key())
         result = client.images.generate(
-            model=get_settings().openai_image_model,
+            model=_image_model(),
             prompt=prompt,
             size="1536x1024",
             quality="high",

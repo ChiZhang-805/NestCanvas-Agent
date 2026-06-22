@@ -52,7 +52,7 @@ npm run dev
 https://render.com/deploy?repo=https://github.com/ChiZhang-805/NestCanvas-Agent
 ```
 
-部署完成后，把 `nestcanvas-web` 的 `https://...onrender.com` 地址分享给用户即可。默认无 Key 时会走 deterministic mock；用户可以直接在网页里的 **OpenAI API Key** 面板填写自己的 Key。Key 只保存在当前浏览器 localStorage，并通过 `X-OpenAI-API-Key` 请求头临时发送给 API。Render Dashboard 里的 `OPENAI_API_KEY` 只是可选的站主预置方式，不是必需。
+部署完成后，把 `nestcanvas-web` 的 `https://...onrender.com` 地址分享给用户即可。默认无 Key 时会走 deterministic mock；用户可以直接在网页里的 **OpenAI API Key** 面板填写自己的 Key，并切换解释模型、快速模型和图片模型。Key 和模型选择只保存在当前浏览器 localStorage，并通过 `X-OpenAI-API-Key`、`X-OpenAI-Model-Text`、`X-OpenAI-Model-Fast`、`X-OpenAI-Model-Image` 请求头临时发送给 API。Render Dashboard 里的 `OPENAI_API_KEY` 只是可选的站主预置方式，不是必需。
 
 注意：当前 Blueprint 使用 Render free plan 和本地 SQLite/文件存储，适合公开 demo。免费服务可能休眠，且重启/重新部署后上传文件和 SQLite 状态不保证长期保留；生产版应改接 Render Postgres/对象存储或外部数据库。
 
@@ -65,10 +65,10 @@ https://render.com/deploy?repo=https://github.com/ChiZhang-805/NestCanvas-Agent
 - `STORAGE_DIR`：上传资产、mock render 的本地存储目录。
 - `SYNC_JOBS`：`true` 时解析任务同步执行，适合本地 demo 和测试；生产可设为 `false` 并启动 RQ worker。
 - `OPENAI_API_KEY`：为空时所有 AI 相关函数走 deterministic mock。
-- `OPENAI_MODEL_TEXT`、`OPENAI_MODEL_FAST`、`OPENAI_IMAGE_MODEL`：集中由 `openai_service.py` 读取。
+- `OPENAI_MODEL_TEXT`、`OPENAI_MODEL_FAST`、`OPENAI_IMAGE_MODEL`：集中由 `openai_service.py` 读取；网页端可按当前浏览器覆盖这些模型。
 - `NEXT_PUBLIC_API_BASE_URL`：前端访问 FastAPI 的地址。
 
-也可以不写 `.env` 的 `OPENAI_API_KEY`，直接在网页里的 **OpenAI API Key** 面板填写。网页 Key 只保存在当前浏览器 `localStorage`，随后通过 `X-OpenAI-API-Key` 请求头发送给本机 FastAPI；后端不会把它写入数据库。适合本地演示或临时切换账号；长期部署建议放到 `.env`。
+也可以不写 `.env` 的 `OPENAI_API_KEY`，直接在网页里的 **OpenAI API Key** 面板填写。网页 Key 和模型选择只保存在当前浏览器 `localStorage`，随后通过请求头发送给本机 FastAPI；后端不会把它写入数据库。适合本地演示、公开 demo 或临时切换账号；长期部署可把站主默认 Key 放到 `.env`。
 
 ## 测试
 

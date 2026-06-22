@@ -35,33 +35,66 @@ export const API_BASE = configuredApiBase
   : "";
 
 export const OPENAI_API_KEY_STORAGE_KEY = "nestcanvas.openai_api_key";
+export const OPENAI_MODEL_TEXT_STORAGE_KEY = "nestcanvas.openai_model_text";
+export const OPENAI_MODEL_FAST_STORAGE_KEY = "nestcanvas.openai_model_fast";
+export const OPENAI_MODEL_IMAGE_STORAGE_KEY = "nestcanvas.openai_model_image";
 
-export function getStoredOpenAIKey(): string {
-  if (typeof window === "undefined") return "";
+export function getStoredOpenAISettings() {
+  if (typeof window === "undefined") return { apiKey: "", modelText: "", modelFast: "", modelImage: "" };
   try {
-    return window.localStorage.getItem(OPENAI_API_KEY_STORAGE_KEY) ?? "";
+    return {
+      apiKey: window.localStorage.getItem(OPENAI_API_KEY_STORAGE_KEY) ?? "",
+      modelText: window.localStorage.getItem(OPENAI_MODEL_TEXT_STORAGE_KEY) ?? "",
+      modelFast: window.localStorage.getItem(OPENAI_MODEL_FAST_STORAGE_KEY) ?? "",
+      modelImage: window.localStorage.getItem(OPENAI_MODEL_IMAGE_STORAGE_KEY) ?? ""
+    };
   } catch {
-    return "";
+    return { apiKey: "", modelText: "", modelFast: "", modelImage: "" };
   }
 }
 
-export function saveStoredOpenAIKey(value: string) {
-  if (typeof window === "undefined") return;
+export function getStoredOpenAIKey(): string {
+  return getStoredOpenAISettings().apiKey;
+}
+
+function setStoredValue(key: string, value: string | undefined) {
+  if (typeof window === "undefined" || value === undefined) return;
   const cleaned = value.trim();
   try {
     if (cleaned) {
-      window.localStorage.setItem(OPENAI_API_KEY_STORAGE_KEY, cleaned);
+      window.localStorage.setItem(key, cleaned);
     } else {
-      window.localStorage.removeItem(OPENAI_API_KEY_STORAGE_KEY);
+      window.localStorage.removeItem(key);
     }
   } catch {
     // The app still works with .env keys or mock mode when localStorage is unavailable.
   }
 }
 
+export function saveStoredOpenAISettings(payload: {
+  apiKey?: string;
+  modelText?: string;
+  modelFast?: string;
+  modelImage?: string;
+}) {
+  setStoredValue(OPENAI_API_KEY_STORAGE_KEY, payload.apiKey);
+  setStoredValue(OPENAI_MODEL_TEXT_STORAGE_KEY, payload.modelText);
+  setStoredValue(OPENAI_MODEL_FAST_STORAGE_KEY, payload.modelFast);
+  setStoredValue(OPENAI_MODEL_IMAGE_STORAGE_KEY, payload.modelImage);
+}
+
+export function saveStoredOpenAIKey(value: string) {
+  saveStoredOpenAISettings({ apiKey: value });
+}
+
 function openAIHeader(): Record<string, string> {
-  const key = getStoredOpenAIKey();
-  return key ? { "X-OpenAI-API-Key": key } : {};
+  const stored = getStoredOpenAISettings();
+  return {
+    ...(stored.apiKey ? { "X-OpenAI-API-Key": stored.apiKey } : {}),
+    ...(stored.modelText ? { "X-OpenAI-Model-Text": stored.modelText } : {}),
+    ...(stored.modelFast ? { "X-OpenAI-Model-Fast": stored.modelFast } : {}),
+    ...(stored.modelImage ? { "X-OpenAI-Model-Image": stored.modelImage } : {})
+  };
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {

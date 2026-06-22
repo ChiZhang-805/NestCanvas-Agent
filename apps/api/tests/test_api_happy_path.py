@@ -176,12 +176,21 @@ def test_openai_settings_status_accepts_browser_key_header(client):
     assert mock_response.json()["source"] == "mock"
 
     browser_response = client.get(
-        "/api/settings/openai", headers={"X-OpenAI-API-Key": "sk-test-browser-key"}
+        "/api/settings/openai",
+        headers={
+            "X-OpenAI-API-Key": "sk-test-browser-key",
+            "X-OpenAI-Model-Text": "gpt-test-text",
+            "X-OpenAI-Model-Fast": "gpt-test-fast",
+            "X-OpenAI-Model-Image": "gpt-test-image",
+        },
     )
     assert browser_response.status_code == 200
     payload = browser_response.json()
     assert payload["source"] == "browser"
     assert payload["active"] is True
+    assert payload["text_model"] == "gpt-test-text"
+    assert payload["fast_model"] == "gpt-test-fast"
+    assert payload["image_model"] == "gpt-test-image"
 
 
 def test_upload_suffix_follows_content_type_not_filename(client):

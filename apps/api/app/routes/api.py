@@ -61,8 +61,8 @@ from app.services.openai_service import (
     openai_runtime_status,
     parse_design_brief,
     review_design_options,
-    reset_request_openai_api_key,
-    set_request_openai_api_key,
+    reset_request_openai_overrides,
+    set_request_openai_overrides,
 )
 from app.services.input_preparation_service import prepare_floorplan_input
 from app.workers.jobs import process_parse_floorplan, run_parse_floorplan_job
@@ -70,12 +70,20 @@ from app.workers.jobs import process_parse_floorplan, run_parse_floorplan_job
 
 async def _openai_request_context(
     x_openai_api_key: Annotated[str | None, Header(alias="X-OpenAI-API-Key")] = None,
+    x_openai_model_text: Annotated[str | None, Header(alias="X-OpenAI-Model-Text")] = None,
+    x_openai_model_fast: Annotated[str | None, Header(alias="X-OpenAI-Model-Fast")] = None,
+    x_openai_model_image: Annotated[str | None, Header(alias="X-OpenAI-Model-Image")] = None,
 ):
-    token = set_request_openai_api_key(x_openai_api_key)
+    tokens = set_request_openai_overrides(
+        x_openai_api_key,
+        x_openai_model_text,
+        x_openai_model_fast,
+        x_openai_model_image,
+    )
     try:
         yield
     finally:
-        reset_request_openai_api_key(token)
+        reset_request_openai_overrides(tokens)
 
 
 router = APIRouter(dependencies=[Depends(_openai_request_context)])

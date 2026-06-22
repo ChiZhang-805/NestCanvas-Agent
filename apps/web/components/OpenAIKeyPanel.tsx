@@ -4,46 +4,128 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, KeyRound, RefreshCw, Trash2 } from "lucide-react";
 import {
   getOpenAISettingsStatus,
-  getStoredOpenAIKey,
-  saveStoredOpenAIKey
+  getStoredOpenAISettings,
+  saveStoredOpenAISettings
 } from "@/lib/api";
+import {
+  CUSTOM_MODEL_VALUE,
+  FAST_MODEL_OPTIONS,
+  IMAGE_MODEL_OPTIONS,
+  OpenAIModelOption,
+  TEXT_MODEL_OPTIONS,
+  modelDescription,
+  modelSelectValue
+} from "@/lib/openaiModels";
 import { OpenAISettingsStatus } from "@/lib/types";
 
 function sourceLabel(status: OpenAISettingsStatus | null) {
   if (!status) return "检测中";
-  if (status.source === "browser") return "浏览器 Key";
+  if (status.source === "browser") return "浏览器设置";
   if (status.source === "env") return ".env Key";
   return "Mock 模式";
 }
 
+function ModelSelect({
+  label,
+  value,
+  options,
+  onChange
+}: {
+  label: string;
+  value: string;
+  options: OpenAIModelOption[];
+  onChange: (value: string) => void;
+}) {
+  const selected = modelSelectValue(value, options);
+
+  return (
+    <label className="grid gap-1 text-xs font-black uppercase tracking-wide text-ink/55">
+      <span>{label}</span>
+      <select
+        className="focus-ring min-h-10 min-w-0 rounded-md border border-ink/15 bg-white px-2 text-sm font-bold normal-case tracking-normal text-ink"
+        value={selected}
+        onChange={(event) => onChange(event.target.value === CUSTOM_MODEL_VALUE ? "" : event.target.value)}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+        <option value={CUSTOM_MODEL_VALUE}>自定义模型 ID</option>
+      </select>
+      {selected === CUSTOM_MODEL_VALUE ? (
+        <input
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder="例如 gpt-5.5"
+          spellCheck={false}
+          autoComplete="off"
+          className="focus-ring min-h-10 min-w-0 rounded-md border border-ink/15 bg-white px-2 text-sm font-semibold normal-case tracking-normal text-ink"
+        />
+      ) : (
+        <span className="text-[11px] font-semibold normal-case leading-4 tracking-normal text-ink/48">
+          {modelDescription(value, options)}
+        </span>
+      )}
+    </label>
+  );
+}
+
 export function OpenAIKeyPanel({ compact = false }: { compact?: boolean }) {
   const [value, setValue] = useState("");
+  const [modelText, setModelText] = useState("gpt-5.5");
+  const [modelFast, setModelFast] = useState("gpt-5.4-mini");
+  const [modelImage, setModelImage] = useState("gpt-image-2");
   const [status, setStatus] = useState<OpenAISettingsStatus | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   async function refreshStatus() {
     try {
-      setStatus(await getOpenAISettingsStatus());
+      const next = await getOpenAISettingsStatus();
+      const stored = getStoredOpenAISettings();
+      setStatus(next);
+      setModelText(stored.modelText || next.text_model);
+      setModelFast(stored.modelFast || next.fast_model);
+      setModelImage(stored.modelImage || next.image_model);
     } catch {
       setStatus(null);
     }
   }
 
   useEffect(() => {
-    setValue(getStoredOpenAIKey());
+    const stored = getStoredOpenAISettings();
+    setValue(stored.apiKey);
+    setModelText(stored.modelText || "gpt-5.5");
+    setModelFast(stored.modelFast || "gpt-5.4-mini");
+    setModelImage(stored.modelImage || "gpt-image-2");
     refreshStatus();
   }, []);
 
   function save() {
-    saveStoredOpenAIKey(value);
+    const cleanedModelText = modelText.trim();
+    const cleanedModelFast = modelFast.trim();
+    const cleanedModelImage = modelImage.trim();
+    if (!cleanedModelText || !cleanedModelFast || !cleanedModelImage) {
+      setMessage("请先选择或填写完整模型 ID");
+      return;
+    }
+    saveStoredOpenAISettings({
+      apiKey: value,
+      modelText: cleanedModelText,
+      modelFast: cleanedModelFast,
+      modelImage: cleanedModelImage
+    });
     setMessage(value.trim() ? "已保存到本机浏览器" : "已切换为环境变量或 mock");
     refreshStatus();
   }
 
   function clear() {
     setValue("");
-    saveStoredOpenAIKey("");
-    setMessage("已清除浏览器 Key");
+    setModelText(status?.text_model || "gpt-5.5");
+    setModelFast(status?.fast_model || "gpt-5.4-mini");
+    setModelImage(status?.image_model || "gpt-image-2");
+    saveStoredOpenAISettings({ apiKey: "", modelText: "", modelFast: "", modelImage: "" });
+    setMessage("已清除浏览器 OpenAI 设置");
     refreshStatus();
   }
 
@@ -102,15 +184,21 @@ export function OpenAIKeyPanel({ compact = false }: { compact?: boolean }) {
         )}
       </div>
 
+      <div className={`mt-3 grid gap-2 ${compact ? "md:grid-cols-3" : "md:grid-cols-3"}`}>
+        <ModelSelect label="解释模型" value={modelText} options={TEXT_MODEL_OPTIONS} onChange={setModelText} />
+        <ModelSelect label="快速模型" value={modelFast} options={FAST_MODEL_OPTIONS} onChange={setModelFast} />
+        <ModelSelect label="图片模型" value={modelImage} options={IMAGE_MODEL_OPTIONS} onChange={setModelImage} />
+      </div>
+
       {!compact && (
         <p className="mt-2 text-xs font-medium leading-5 text-ink/55">
-          Key 只保存在当前浏览器 localStorage，调用需求抽取和概念渲染时通过请求头发送到本机 API。
+          Key 和模型只保存在当前浏览器 localStorage，调用需求抽取、户型识别和概念渲染时通过请求头发送到本机 API。
         </p>
       )}
       {message && <p className="mt-2 text-xs font-bold text-tide">{message}</p>}
       {status && (
         <p className="mt-2 text-xs text-ink/48">
-          text {status.text_model} · image {status.image_model}
+          text {status.text_model} · fast {status.fast_model} · image {status.image_model}
         </p>
       )}
     </section>
