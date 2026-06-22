@@ -16,7 +16,7 @@ const steps = [
 
 export function StepNav({ projectId, current }: { projectId: string; current: string }) {
   return (
-    <nav className="flex flex-wrap gap-1.5">
+    <nav className="flex min-w-0 flex-wrap items-center gap-2 lg:flex-1 lg:justify-end">
       {steps.map((step) => {
         const Icon = step.icon;
         const active = current === step.href;
@@ -24,10 +24,10 @@ export function StepNav({ projectId, current }: { projectId: string; current: st
           <Link
             key={step.href}
             href={`/projects/${projectId}/${step.href}`}
-            className={`focus-ring inline-flex items-center gap-2 rounded-md border px-3 py-2 text-xs font-bold uppercase tracking-normal transition ${
+            className={`focus-ring inline-flex min-h-10 items-center gap-2 rounded-md border px-3 py-2 text-sm font-bold tracking-normal transition ${
               active
-                ? "border-ink bg-ink text-white"
-                : "border-ink/10 bg-white/72 text-ink/70 hover:border-ink hover:text-ink"
+                ? "border-tide bg-tide text-white"
+                : "border-ink/10 bg-white text-ink hover:border-tide"
             }`}
           >
             <Icon size={16} aria-hidden="true" />

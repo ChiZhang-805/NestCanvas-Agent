@@ -5,10 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   CheckCircle2,
-  Download,
-  FolderOpen,
   ImageIcon,
-  Menu,
   MessageSquareText,
   Ruler,
   Sofa,
@@ -17,12 +14,8 @@ import {
 } from "lucide-react";
 import { BeforeAfterHero, HeroMode } from "@/components/BeforeAfterHero";
 import { OpenAIKeyPanel } from "@/components/OpenAIKeyPanel";
-import { createDemoProject, createProject } from "@/lib/api";
+import { createProject } from "@/lib/api";
 import { useProjectStore } from "@/store/projectStore";
-
-type ActionTarget = "upload" | "floorplan" | "brief" | "options" | "renders";
-type ActionMode = "new" | "demo";
-type DemoTarget = Exclude<ActionTarget, "upload">;
 
 const workflow = [
   { key: "upload", label: "上传", icon: Upload },
@@ -32,57 +25,6 @@ const workflow = [
   { key: "renders", label: "渲染", icon: ImageIcon }
 ] as const;
 
-const quickActions: Array<{
-  label: string;
-  description: string;
-  icon: typeof Upload;
-  target: ActionTarget;
-  mode: ActionMode;
-}> = [
-  {
-    label: "上传资产",
-    description: "新建项目",
-    icon: Upload,
-    target: "upload",
-    mode: "new"
-  },
-  {
-    label: "校正户型",
-    description: "示例画布",
-    icon: Ruler,
-    target: "floorplan",
-    mode: "demo"
-  },
-  {
-    label: "填写需求",
-    description: "结构化 brief",
-    icon: MessageSquareText,
-    target: "brief",
-    mode: "demo"
-  },
-  {
-    label: "生成方案",
-    description: "多方案比较",
-    icon: Sofa,
-    target: "options",
-    mode: "demo"
-  },
-  {
-    label: "查看渲染",
-    description: "概念效果",
-    icon: WandSparkles,
-    target: "renders",
-    mode: "demo"
-  },
-  {
-    label: "导出分享",
-    description: "方案交付",
-    icon: Download,
-    target: "renders",
-    mode: "demo"
-  }
-];
-
 const modeCopy: Record<
   HeroMode,
   {
@@ -90,8 +32,6 @@ const modeCopy: Record<
     title: string;
     body: string;
     cta: string;
-    target: ActionTarget;
-    mode: ActionMode;
     progress: string;
   }
 > = {
@@ -100,44 +40,34 @@ const modeCopy: Record<
     title: "NestCanvas\nAgent 栖画",
     body: "从一张空房照片或户型图开始，串联空间识别、需求整理和方案比较。\n把概念渲染沉淀成可落地的家居创作流程。",
     cta: "开始创作",
-    target: "upload",
-    mode: "new",
     progress: "1 / 5"
   },
   floorplan: {
     eyebrow: "Geometry calibration",
     title: "校正空间尺度",
     body: "校准墙体、门窗、房间和比例，形成可靠底图。\n后续家具坐标和动线判断，都以这里为准。",
-    cta: "进入校正",
-    target: "floorplan",
-    mode: "demo",
+    cta: "开始创作",
     progress: "2 / 5"
   },
   brief: {
     eyebrow: "Lifestyle brief",
     title: "表达生活方式",
     body: "沉淀风格、预算、收纳、成员和偏好禁忌。\n让生成结果更接近真实居住需求。",
-    cta: "填写需求",
-    target: "brief",
-    mode: "demo",
+    cta: "开始创作",
     progress: "3 / 5"
   },
   options: {
     eyebrow: "Layout options",
     title: "比较多套布局",
     body: "生成多套家具方案，同屏检查碰撞、挡门和通道。\n把面积利用和可选项变得清楚。",
-    cta: "查看方案",
-    target: "options",
-    mode: "demo",
+    cta: "开始创作",
     progress: "4 / 5"
   },
   renders: {
     eyebrow: "Concept render",
     title: "渲染理想居所",
     body: "生成概念效果图，快速沟通氛围、材质和软装。\n尺寸和可施工性仍回到平面图校验。",
-    cta: "查看渲染",
-    target: "renders",
-    mode: "demo",
+    cta: "开始创作",
     progress: "5 / 5"
   }
 };
@@ -146,15 +76,13 @@ export default function HomePage() {
   const [title, setTitle] = useState("我的栖画项目");
   const [activeMode, setActiveMode] = useState<HeroMode>("upload");
   const [busy, setBusy] = useState(false);
-  const [actionBusy, setActionBusy] = useState<DemoTarget | null>(null);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const setCurrentProjectId = useProjectStore((state) => state.setCurrentProjectId);
   const activeCopy = modeCopy[activeMode];
-  const isNavigating = busy || actionBusy !== null;
 
   async function createUploadProject() {
-    if (isNavigating) return;
+    if (busy) return;
     setBusy(true);
     setError(null);
     try {
@@ -166,29 +94,6 @@ export default function HomePage() {
     } finally {
       setBusy(false);
     }
-  }
-
-  async function openDemo(target: DemoTarget) {
-    if (isNavigating) return;
-    setActionBusy(target);
-    setError(null);
-    try {
-      const project = await createDemoProject();
-      setCurrentProjectId(project.id);
-      router.push(`/projects/${project.id}/${target}`);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "示例项目创建失败");
-    } finally {
-      setActionBusy(null);
-    }
-  }
-
-  async function runAction(target: ActionTarget, mode: ActionMode) {
-    if (mode === "new") {
-      await createUploadProject();
-      return;
-    }
-    await openDemo(target === "upload" ? "options" : target);
   }
 
   return (
@@ -214,21 +119,12 @@ export default function HomePage() {
             </span>
             <button
               type="button"
-              onClick={() => openDemo("options")}
-              disabled={isNavigating}
+              onClick={createUploadProject}
+              disabled={busy}
               className="focus-ring inline-flex items-center gap-2 rounded-md border border-ink/25 bg-white/64 px-3 py-2 text-xs font-bold uppercase backdrop-blur transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <FolderOpen size={15} aria-hidden="true" />
-              项目
-            </button>
-            <button
-              type="button"
-              onClick={() => openDemo("brief")}
-              disabled={isNavigating}
-              className="focus-ring inline-flex items-center gap-2 rounded-md border border-ink/25 bg-white/64 px-3 py-2 text-xs font-bold uppercase backdrop-blur transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <Menu size={15} aria-hidden="true" />
-              菜单
+              <WandSparkles size={15} aria-hidden="true" />
+              {busy ? "准备中" : "开始创作"}
             </button>
           </div>
         </header>
@@ -306,12 +202,12 @@ export default function HomePage() {
             <div className="mt-8">
               <button
                 type="button"
-                onClick={() => runAction(activeCopy.target, activeCopy.mode)}
-                disabled={isNavigating}
+                onClick={createUploadProject}
+                disabled={busy}
                 className="focus-ring inline-flex min-h-14 min-w-44 items-center justify-center gap-3 rounded-md border border-ink/45 bg-ink px-6 font-black text-white shadow-[0_18px_45px_rgba(34,49,44,0.22)] backdrop-blur transition hover:bg-tide disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <WandSparkles size={18} aria-hidden="true" />
-                {isNavigating ? "准备中" : activeCopy.cta}
+                {busy ? "准备中" : activeCopy.cta}
                 <ArrowRight size={17} aria-hidden="true" />
               </button>
             </div>
@@ -343,38 +239,13 @@ export default function HomePage() {
             <OpenAIKeyPanel compact />
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            {quickActions.map((action) => {
-              const Icon = action.icon;
-              const loading =
-                action.mode === "new" ? busy : actionBusy === action.target;
-              return (
-                <button
-                  key={action.label}
-                  type="button"
-                  onClick={() => runAction(action.target, action.mode)}
-                  disabled={isNavigating}
-                  className="focus-ring flex min-h-20 flex-col items-start justify-between rounded-md border border-ink/15 bg-white/58 p-3 text-left font-bold text-ink transition hover:border-ink/35 hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <Icon size={18} aria-hidden="true" />
-                  <span>
-                    {loading ? "处理中" : action.label}
-                    <span className="mt-1 block text-xs font-semibold text-ink/55">
-                      {action.description}
-                    </span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
           <button
             type="button"
-            onClick={() => openDemo("options")}
-            disabled={isNavigating}
+            onClick={createUploadProject}
+            disabled={busy}
             className="focus-ring mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md bg-ink px-4 py-3 font-bold text-white transition hover:bg-tide disabled:cursor-not-allowed disabled:opacity-60"
           >
-            打开完整示例
+            {busy ? "准备中" : "开始创作"}
             <ArrowRight size={17} aria-hidden="true" />
           </button>
         </section>

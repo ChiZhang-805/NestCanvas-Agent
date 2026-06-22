@@ -129,10 +129,10 @@ export default function UploadPage({ params }: { params: { id: string } }) {
 
   return (
     <PageShell projectId={projectId} current="upload" title="上传户型资产">
-      <div className="grid gap-5 lg:grid-cols-[1.25fr_0.75fr]">
-        <section className="rounded-md border border-ink/10 bg-white p-3 shadow-panel">
-          <div className="grid gap-3 md:grid-cols-2">
-            <div className="min-h-[360px] rounded-md border border-dashed border-ink/15 bg-[#f7f7f3] p-3">
+      <div className="grid min-h-0 gap-4 xl:grid-cols-[minmax(0,1fr)_430px]">
+        <section className="rounded-md border border-ink/10 bg-white p-4 shadow-panel">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-md border border-dashed border-ink/15 bg-[#f7f7f3] p-3">
               <div className="mb-3 flex items-center justify-between gap-3 text-xs font-black uppercase text-ink/55">
                 原始输入
                 {file && <span className="normal-case text-ink/45">{Math.round(file.size / 1024)} KB</span>}
@@ -142,15 +142,15 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                 <img
                   src={preview}
                   alt="上传预览"
-                  className="h-[320px] w-full rounded-md object-contain"
+                  className="h-[420px] w-full rounded-md object-contain xl:h-[520px]"
                 />
               ) : (
-                <div className="flex h-[320px] items-center justify-center text-ink/45">
+                <div className="flex h-[420px] items-center justify-center text-ink/45 xl:h-[520px]">
                   <FileImage size={48} aria-hidden="true" />
                 </div>
               )}
             </div>
-            <div className="min-h-[360px] rounded-md border border-ink/10 bg-cloud p-3">
+            <div className="rounded-md border border-ink/10 bg-cloud p-3">
               <div className="mb-3 flex items-center justify-between gap-3 text-xs font-black uppercase text-ink/55">
                 整理结果
                 {prepared && <span className="normal-case text-tide">{Math.round(prepared.quality_score)} / 100</span>}
@@ -160,17 +160,17 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                 <img
                   src={preparedPreview}
                   alt="整理后的户型输入"
-                  className="h-[320px] w-full rounded-md bg-white object-contain"
+                  className="h-[420px] w-full rounded-md bg-white object-contain xl:h-[520px]"
                 />
               ) : (
-                <div className="flex h-[320px] items-center justify-center rounded-md border border-dashed border-ink/15 bg-white text-ink/45">
+                <div className="flex h-[420px] items-center justify-center rounded-md border border-dashed border-ink/15 bg-white text-ink/45 xl:h-[520px]">
                   <ScanLine size={48} aria-hidden="true" />
                 </div>
               )}
             </div>
           </div>
         </section>
-        <section className="rounded-md border border-ink/10 bg-white p-5 shadow-panel">
+        <section className="h-fit rounded-md border border-ink/10 bg-white p-5 shadow-panel">
           <label className="block text-sm font-medium text-ink" htmlFor="floorplan-upload">
             图片 / PDF / 售楼册拍照
           </label>
