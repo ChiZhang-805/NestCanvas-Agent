@@ -23,22 +23,25 @@ function ModelSelect({
   value,
   options,
   onChange,
-  showDescription = true
+  showDescription = true,
+  className = ""
 }: {
   label: string;
   value: string;
   options: OpenAIModelOption[];
   onChange: (value: string) => void;
   showDescription?: boolean;
+  className?: string;
 }) {
   const selected = modelSelectValue(value, options);
 
   return (
-    <label className="grid gap-1 text-xs font-black uppercase tracking-wide text-ink/55">
+    <label className={`grid gap-1 text-xs font-black uppercase tracking-wide text-ink/55 ${className}`}>
       <span>{label}</span>
       <select
         className="focus-ring min-h-10 min-w-0 rounded-md border border-ink/15 bg-white px-2 text-sm font-bold normal-case tracking-normal text-ink"
         value={selected}
+        title={value}
         onChange={(event) => onChange(event.target.value === CUSTOM_MODEL_VALUE ? "" : event.target.value)}
       >
         {options.map((option) => (
@@ -179,7 +182,7 @@ export function OpenAIKeyPanel({ compact = false }: { compact?: boolean }) {
         )}
       </div>
 
-      <div className={`mt-3 grid gap-2 ${compact ? "md:grid-cols-3" : "md:grid-cols-3"}`}>
+      <div className={`mt-3 grid gap-2 ${compact ? "grid-cols-1 sm:grid-cols-2" : "md:grid-cols-3"}`}>
         <ModelSelect
           label="解释模型"
           value={modelText}
@@ -200,6 +203,7 @@ export function OpenAIKeyPanel({ compact = false }: { compact?: boolean }) {
           options={IMAGE_MODEL_OPTIONS}
           onChange={setModelImage}
           showDescription={!compact}
+          className={compact ? "sm:col-span-2" : ""}
         />
       </div>
 
