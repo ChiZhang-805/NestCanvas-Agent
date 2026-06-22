@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.core.config import get_settings
+from app.core.config import ROOT_DIR, get_settings
 from app.db.init_db import init_db
 from app.routes import router
 
@@ -33,6 +33,9 @@ app.include_router(router, prefix=settings.api_prefix)
 
 settings.storage_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/storage", StaticFiles(directory=settings.storage_dir), name="storage")
+library_assets_dir = ROOT_DIR / "apps" / "api" / "app" / "data" / "floorplan_library" / "assets"
+library_assets_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/library-assets/floorplans", StaticFiles(directory=library_assets_dir), name="floorplan_library_assets")
 
 
 @app.get("/healthz")

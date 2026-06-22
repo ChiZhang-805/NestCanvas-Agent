@@ -155,6 +155,8 @@ def test_floorplan_library_search_and_select_template(client):
     assert library["sources"]
     assert library["items"]
     assert library["items"][0]["floorplan"]["rooms"]
+    assert library["items"][0]["preview_kind"] == "floorplan_svg"
+    assert "preview_image_url" in library["items"][0]
 
     project_response = client.post("/api/projects", json={"title": "户型库项目"})
     assert project_response.status_code == 201

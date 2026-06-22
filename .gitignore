@@ -7,6 +7,8 @@ __pycache__/
 .ruff_cache/
 storage/
 *.db
+data/raw/
+data/external/
 
 node_modules/
 .next/

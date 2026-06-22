@@ -68,6 +68,8 @@ export const floorPlanLibraryItemSchema = z.object({
   tags: z.array(z.string()),
   household_fit: z.array(z.string()),
   match_score: z.number(),
+  preview_image_url: z.string().nullable().optional(),
+  preview_kind: z.enum(["floorplan_svg", "image"]).default("floorplan_svg"),
   floorplan: floorPlanSchema
 });
 

@@ -128,6 +128,8 @@ class FloorPlanLibraryItem(BaseModel):
     tags: list[str] = Field(default_factory=list)
     household_fit: list[str] = Field(default_factory=list)
     match_score: float = Field(ge=0, le=100)
+    preview_image_url: str | None = None
+    preview_kind: Literal["floorplan_svg", "image"] = "floorplan_svg"
     floorplan: FloorPlan
 
 

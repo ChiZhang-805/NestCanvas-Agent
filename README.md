@@ -101,7 +101,7 @@ npm run typecheck
 - `npm run lint`：无警告或错误。
 - `npm run build`：通过。
 
-详细升级设计见 [docs/WORKFLOW_LLM_UPGRADE.md](docs/WORKFLOW_LLM_UPGRADE.md)，包含后端工作流拆分、Home Coach、LLM/视觉/文本模块、便携服务和未来数据库接入路线。
+详细升级设计见 [docs/WORKFLOW_LLM_UPGRADE.md](docs/WORKFLOW_LLM_UPGRADE.md)，包含后端工作流拆分、Home Coach、LLM/视觉/文本模块、便携服务和未来数据库接入路线。检索库数据导入说明见 [docs/DATA_LIBRARY_IMPORT.md](docs/DATA_LIBRARY_IMPORT.md)。
 
 ## 已实现功能
 
@@ -126,20 +126,20 @@ npm run typecheck
 
 ## 户型数据集接入策略
 
-当前产品内置的是 NestCanvas synthetic seed templates，没有复制外部数据。适合先验证用户检索流程、筛选字段和模板写入能力。后续可接入的数据源：
+当前产品内置的是 NestCanvas synthetic seed templates，没有复制外部数据。适合先验证用户检索流程、筛选字段和模板写入能力。本项目不是商业模板库，外部数据的 license 字段主要用于来源追溯、归属和样本治理。后续可接入的数据源：
 
-- RPLAN：适合做大规模住宅户型检索、面积/房间数/邻接关系统计；可作为研究候选源，但生产使用前必须复核数据本体的再分发和商业许可。
-- CubiCasa5K：5k 户型图和语义标注，适合训练/评估户型解析模型；许可为 CC BY-NC 4.0，不建议直接用于商业模板库。
+- RPLAN：适合做大规模住宅户型检索、面积/房间数/邻接关系统计；作为研究候选源时保留原始来源和版本信息。
+- CubiCasa5K：5k 户型图和语义标注，适合训练/评估户型解析模型；官方 Zenodo 页面标注为 CC BY-NC-SA 4.0。
 - Swiss Dwellings：Zenodo 页面为 CC BY 4.0，适合参考更丰富的住宅指标检索方式，例如几何、采光、噪声、可达性等。
 
 推荐数据处理流水线：下载原始数据 -> 转换为统一 `FloorPlan` JSON -> 提取 `area_m2 / bedrooms / bathrooms / room_types / tags / source_license` -> 生成 preview -> 进入 `/api/floorplan-library` 检索索引。
 
 为了让 C 端用户真正能检索和行动，后续建议拆成四类库：
 
-- 户型检索库：优先接 Swiss Dwellings 这类许可更清晰的数据做指标检索；RPLAN、CubiCasa5K 可做研究、训练和评估，但商业使用前必须逐项复核许可。
+- 户型检索库：优先接 Swiss Dwellings、CubiCasa5K、RPLAN 这类公开/研究数据做指标检索和解析验证；正式导入时保留 source、version、license、attribution 字段。
 - 家具尺寸库：从品牌合作、公开授权商品 feed 或自建标准件库收集 `category / width / depth / height / price_band / material / style_tags`，不要直接抓取无授权电商数据。
 - 软装与材料库：维护地板、墙漆、柜体板材、布艺、灯具的价格带和风格标签，用于生活方案包的预算分期和关键词。
-- 3D/布局研究库：3D-FRONT、3D-FUTURE 等适合研究家具关系和风格搭配，但应按研究/非商业许可处理，不能直接成为商用产品素材库。
+- 3D/布局研究库：3D-FRONT、3D-FUTURE 等适合研究家具关系和风格搭配；进入产品检索库时保留来源和版本元数据。
 
 ## 限制与后续替换点
 

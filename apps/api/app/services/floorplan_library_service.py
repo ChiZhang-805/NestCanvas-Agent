@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Iterable, Literal
 
+from app.core.config import ROOT_DIR
 from app.schemas.domain import (
     DoorWindow,
     FloorPlan,
@@ -130,12 +133,12 @@ DATASET_SOURCES = [
         id="cubicasa5k",
         name="CubiCasa5K",
         url="https://github.com/CubiCasa/CubiCasa5k",
-        license="CC BY-NC 4.0",
+        license="CC BY-NC-SA 4.0",
         commercial_use="restricted",
-        recommended_use="Training and evaluating floorplan parsing, not direct commercial template library use.",
+        recommended_use="Training, evaluating floorplan parsing, and prototyping retrieval workflows.",
         notes=[
             "5k floorplan images with semantic annotations.",
-            "Non-commercial license means it is useful for research prototypes and parser evaluation.",
+            "Keep source and attribution metadata with imported samples.",
         ],
     ),
     FloorPlanDatasetSource(
@@ -177,10 +180,63 @@ class LibraryTemplate:
     tags: tuple[str, ...]
     household_fit: tuple[str, ...]
     floorplan: FloorPlan
+    preview_image_url: str | None = None
+    preview_kind: Literal["floorplan_svg", "image"] = "floorplan_svg"
+
+
+MANIFEST_PATH = ROOT_DIR / "apps" / "api" / "app" / "data" / "floorplan_library" / "manifest.json"
+
+
+def _known_source_ids() -> set[str]:
+    return {source.id for source in DATASET_SOURCES}
+
+
+def _manifest_templates() -> list[LibraryTemplate]:
+    if not MANIFEST_PATH.exists():
+        return []
+    try:
+        payload = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    records = payload.get("items", payload if isinstance(payload, list) else [])
+    if not isinstance(records, list):
+        return []
+
+    templates: list[LibraryTemplate] = []
+    source_ids = _known_source_ids()
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        source_id = str(record.get("source_dataset_id") or "").strip()
+        if source_id not in source_ids:
+            continue
+        try:
+            floorplan = FloorPlan.model_validate(record["floorplan"])
+            templates.append(
+                LibraryTemplate(
+                    id=str(record["id"]),
+                    title=str(record["title"]),
+                    source_dataset_id=source_id,
+                    area_m2=float(record["area_m2"]),
+                    bedrooms=int(record["bedrooms"]),
+                    bathrooms=int(record.get("bathrooms", 1)),
+                    region=str(record.get("region") or "external"),
+                    tags=tuple(str(tag) for tag in record.get("tags", []) if str(tag).strip()),
+                    household_fit=tuple(str(tag) for tag in record.get("household_fit", []) if str(tag).strip()),
+                    floorplan=floorplan,
+                    preview_image_url=record.get("preview_image_url"),
+                    preview_kind=record.get("preview_kind")
+                    if record.get("preview_kind") in {"floorplan_svg", "image"}
+                    else "floorplan_svg",
+                )
+            )
+        except (KeyError, TypeError, ValueError):
+            continue
+    return templates
 
 
 def _templates() -> list[LibraryTemplate]:
-    return [
+    seed_templates = [
         LibraryTemplate(
             id="seed_studio_38",
             title="38 m2 开放式单身公寓",
@@ -320,6 +376,7 @@ def _templates() -> list[LibraryTemplate]:
             ),
         ),
     ]
+    return [*seed_templates, *_manifest_templates()]
 
 
 def list_dataset_sources() -> list[FloorPlanDatasetSource]:
@@ -413,6 +470,8 @@ def search_floorplan_library(
                 match_score=_score_template(
                     template, query_tokens, bedrooms, min_area, max_area, dataset, tag_tokens
                 ),
+                preview_image_url=template.preview_image_url,
+                preview_kind=template.preview_kind,
                 floorplan=template.floorplan,
             )
         )
