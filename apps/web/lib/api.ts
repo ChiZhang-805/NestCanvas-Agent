@@ -43,6 +43,30 @@ function apiUrl(path: string) {
   return `${API_BASE}${path}`;
 }
 
+function isRenderWebRuntime() {
+  return typeof window !== "undefined" && window.location.hostname.endsWith(".onrender.com");
+}
+
+function candidateApiUrls(path: string) {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const directUrl = apiUrl(normalizedPath);
+  const urls: string[] = [];
+
+  if (isRenderWebRuntime()) urls.push(normalizedPath);
+  urls.push(directUrl);
+  if (API_BASE) urls.push(normalizedPath);
+
+  return [...new Set(urls)];
+}
+
+function isFetchNetworkError(error: unknown) {
+  return error instanceof TypeError || (error instanceof Error && /fetch|network|load failed/i.test(error.message));
+}
+
+function networkErrorMessage() {
+  return "后端 API 暂时连接不上。Render 免费实例可能正在冷启动或 nestcanvas-api 服务未处于 Running 状态，请稍后刷新；如果持续出现，请在 Render Dashboard 重新部署 nestcanvas-api。";
+}
+
 function summarizeResponseError(status: number, statusText: string, contentType: string | null, detail: string) {
   const trimmed = detail.trim();
   if (contentType?.includes("text/html") || trimmed.startsWith("<!DOCTYPE") || trimmed.startsWith("<html")) {
@@ -55,7 +79,8 @@ function summarizeResponseError(status: number, statusText: string, contentType:
 export function backendAssetUrl(path: string | null | undefined) {
   if (!path) return path;
   if (/^https?:\/\//i.test(path) || path.startsWith("data:")) return path;
-  return apiUrl(path.startsWith("/") ? path : `/${path}`);
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return isRenderWebRuntime() ? normalizedPath : apiUrl(normalizedPath);
 }
 
 export function getStoredOpenAISettings() {
@@ -117,14 +142,29 @@ function openAIHeader(): Record<string, string> {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(apiUrl(path), {
+  const requestInit: RequestInit = {
     ...init,
     headers: {
       ...(init?.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
       ...openAIHeader(),
       ...init?.headers
     }
-  });
+  };
+  let response: Response | null = null;
+
+  for (const url of candidateApiUrls(path)) {
+    try {
+      response = await fetch(url, requestInit);
+      break;
+    } catch (error) {
+      if (!isFetchNetworkError(error)) throw error;
+    }
+  }
+
+  if (!response) {
+    throw new Error(networkErrorMessage());
+  }
+
   if (!response.ok) {
     const detail = await response.text();
     let message = summarizeResponseError(

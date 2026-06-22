@@ -78,7 +78,8 @@ export function OpenAIKeyPanel({ compact = false }: { compact?: boolean }) {
   const [modelImage, setModelImage] = useState("gpt-image-2");
   const [status, setStatus] = useState<OpenAISettingsStatus | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const hasBrowserKey = value.trim().length > 0;
+  const [savedKey, setSavedKey] = useState("");
+  const hasBrowserKey = savedKey.trim().length > 0;
 
   async function refreshStatus() {
     try {
@@ -96,6 +97,7 @@ export function OpenAIKeyPanel({ compact = false }: { compact?: boolean }) {
   useEffect(() => {
     const stored = getStoredOpenAISettings();
     setValue(stored.apiKey);
+    setSavedKey(stored.apiKey);
     setModelText(stored.modelText || "gpt-5.5");
     setModelFast(stored.modelFast || "gpt-5.4-mini");
     setModelImage(stored.modelImage || "gpt-image-2");
@@ -116,7 +118,8 @@ export function OpenAIKeyPanel({ compact = false }: { compact?: boolean }) {
       modelFast: cleanedModelFast,
       modelImage: cleanedModelImage
     });
-    setMessage(value.trim() ? "已保存到本机浏览器" : "已切换为环境变量或 mock");
+    setSavedKey(value.trim());
+    setMessage(null);
     refreshStatus();
   }
 
@@ -126,7 +129,8 @@ export function OpenAIKeyPanel({ compact = false }: { compact?: boolean }) {
     setModelFast(status?.fast_model || "gpt-5.4-mini");
     setModelImage(status?.image_model || "gpt-image-2");
     saveStoredOpenAISettings({ apiKey: "", modelText: "", modelFast: "", modelImage: "" });
-    setMessage("已清除浏览器 OpenAI 设置");
+    setSavedKey("");
+    setMessage(null);
     refreshStatus();
   }
 
