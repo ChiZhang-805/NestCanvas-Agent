@@ -19,6 +19,10 @@ const roomTypes = [
   "storage"
 ];
 
+function messageClass(message: string) {
+  return message === "已保存" ? "text-tide" : "text-clay";
+}
+
 export default function FloorplanPage({ params }: { params: { id: string } }) {
   const projectId = params.id;
   const [floorplan, setFloorplan] = useState<FloorPlan | null>(null);
@@ -123,10 +127,11 @@ export default function FloorplanPage({ params }: { params: { id: string } }) {
                   <ArrowRight size={17} aria-hidden="true" />
                 </Link>
               </div>
-              {message && <p className="mt-3 text-sm text-tide">{message}</p>}
+              {message && <p className={`mt-3 text-sm ${messageClass(message)}`}>{message}</p>}
             </>
           ) : (
             <div className="rounded-md border border-dashed border-ink/15 bg-cloud p-5">
+              {message && <p className={`mb-3 text-sm font-semibold ${messageClass(message)}`}>{message}</p>}
               <p className="text-sm font-bold text-ink">暂无可校正户型</p>
               <p className="mt-2 text-sm leading-6 text-ink/62">
                 先上传图片/PDF 解析，或从户型库选一个相似模板作为起点。
