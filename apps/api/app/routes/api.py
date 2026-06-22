@@ -7,7 +7,6 @@ from typing import Annotated
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Header, HTTPException, Query, UploadFile, status
-from PIL import Image
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -44,28 +43,11 @@ from app.schemas.domain import (
     ProjectWorkflow,
     RenderAssetDocument,
 )
-from app.services.layout_service import generate_layout_options
-from app.services.design_review_service import build_local_design_review
-from app.services.home_coach_service import build_home_coach_package
-from app.services.living_plan_service import build_living_plan_package
-from app.services.project_workflow_service import build_project_workflow
-from app.services.floorplan_library_service import (
-    get_floorplan_template,
-    list_dataset_sources,
-    search_floorplan_library,
-)
 from app.services.openai_service import (
-    analyze_floorplan_image,
-    build_render_prompt,
-    generate_interior_image,
     openai_runtime_status,
-    parse_design_brief,
-    review_design_options,
     reset_request_openai_overrides,
     set_request_openai_overrides,
 )
-from app.services.input_preparation_service import prepare_floorplan_input
-from app.workers.jobs import process_parse_floorplan, run_parse_floorplan_job
 
 
 async def _openai_request_context(
@@ -183,6 +165,8 @@ def search_floorplan_templates(
     tags: str | None = Query(default=None, max_length=160),
     limit: int = Query(default=12, ge=1, le=120),
 ) -> FloorPlanLibrarySearchResponse:
+    from app.services.floorplan_library_service import list_dataset_sources, search_floorplan_library
+
     return FloorPlanLibrarySearchResponse(
         sources=list_dataset_sources(),
         items=search_floorplan_library(
@@ -254,6 +238,8 @@ def create_project(payload: ProjectCreate, db: Session = Depends(get_db)) -> Pro
 
 @router.post("/demo-project", response_model=ProjectDetail, status_code=status.HTTP_201_CREATED)
 def create_demo_project(db: Session = Depends(get_db)) -> ProjectDetail:
+    from app.services.layout_service import generate_layout_options
+
     fixture_dir = ROOT_DIR / "tests" / "fixtures"
     floorplan = FloorPlan.model_validate_json(
         (fixture_dir / "simple_2br_floorplan.json").read_text(encoding="utf-8")
@@ -339,6 +325,11 @@ def get_project(project_id: str, db: Session = Depends(get_db)) -> ProjectDetail
 
 @router.post("/projects/{project_id}/export", response_model=Asset, status_code=status.HTTP_201_CREATED)
 def export_project(project_id: str, db: Session = Depends(get_db)) -> Asset:
+    from app.services.design_review_service import build_local_design_review
+    from app.services.home_coach_service import build_home_coach_package
+    from app.services.living_plan_service import build_living_plan_package
+    from app.services.project_workflow_service import build_project_workflow
+
     detail = get_project(project_id, db)
     project_dir = get_settings().storage_dir / "projects" / project_id
     project_dir.mkdir(parents=True, exist_ok=True)
@@ -391,6 +382,8 @@ def export_project(project_id: str, db: Session = Depends(get_db)) -> Asset:
 
 @router.get("/projects/{project_id}/workflow", response_model=ProjectWorkflow)
 def get_project_workflow(project_id: str, db: Session = Depends(get_db)) -> ProjectWorkflow:
+    from app.services.project_workflow_service import build_project_workflow
+
     detail = get_project(project_id, db)
     return build_project_workflow(detail)
 
@@ -423,6 +416,8 @@ def upload_asset(
     height: int | None = None
     if asset_type == "image":
         try:
+            from PIL import Image
+
             with Image.open(path) as image:
                 width, height = image.size
         except Exception:
@@ -449,6 +444,9 @@ def upload_asset(
 
 @router.post("/projects/{project_id}/prepare-input", response_model=InputPreparationResult)
 def prepare_project_input(project_id: str, db: Session = Depends(get_db)) -> InputPreparationResult:
+    from app.services.input_preparation_service import prepare_floorplan_input
+    from app.services.openai_service import analyze_floorplan_image
+
     project = _project_or_404(db, project_id)
     source_asset = _latest_import_asset(db, project_id)
     if source_asset is None:
@@ -532,6 +530,8 @@ def create_starter_floorplan(project_id: str, db: Session = Depends(get_db)) -> 
 def create_library_floorplan(
     project_id: str, template_id: str, db: Session = Depends(get_db)
 ) -> FloorPlanDocument:
+    from app.services.floorplan_library_service import get_floorplan_template
+
     project = _project_or_404(db, project_id)
     template = get_floorplan_template(template_id)
     if template is None:
@@ -558,6 +558,8 @@ def create_library_floorplan(
 
 @router.post("/projects/{project_id}/parse-floorplan", response_model=ParseJobResponse)
 def parse_floorplan(project_id: str, db: Session = Depends(get_db)) -> ParseJobResponse:
+    from app.workers.jobs import process_parse_floorplan, run_parse_floorplan_job
+
     _project_or_404(db, project_id)
     asset_exists = db.scalars(
         select(AssetModel)
@@ -628,6 +630,8 @@ def create_brief(
     payload: BriefRequest,
     db: Session = Depends(get_db),
 ) -> DesignBriefDocument:
+    from app.services.openai_service import parse_design_brief
+
     _project_or_404(db, project_id)
     brief = parse_design_brief(payload.text)
     model = DesignBriefModel(
@@ -648,6 +652,8 @@ def create_brief(
 def create_layout_options(
     project_id: str, db: Session = Depends(get_db)
 ) -> list[LayoutOptionDocument]:
+    from app.services.layout_service import generate_layout_options
+
     _project_or_404(db, project_id)
     floorplan_record = _latest_floorplan(db, project_id)
     brief_record = _latest_brief(db, project_id)
@@ -691,6 +697,8 @@ def create_layout_options(
 
 @router.post("/projects/{project_id}/design-review", response_model=DesignReview)
 def create_design_review(project_id: str, db: Session = Depends(get_db)) -> DesignReview:
+    from app.services.openai_service import review_design_options
+
     _project_or_404(db, project_id)
     floorplan_record = _latest_floorplan(db, project_id)
     brief_record = _latest_brief(db, project_id)
@@ -713,6 +721,9 @@ def create_design_review(project_id: str, db: Session = Depends(get_db)) -> Desi
 
 @router.post("/projects/{project_id}/living-plan", response_model=LivingPlanPackage)
 def create_living_plan(project_id: str, db: Session = Depends(get_db)) -> LivingPlanPackage:
+    from app.services.design_review_service import build_local_design_review
+    from app.services.living_plan_service import build_living_plan_package
+
     _project_or_404(db, project_id)
     floorplan_record = _latest_floorplan(db, project_id)
     brief_record = _latest_brief(db, project_id)
@@ -731,6 +742,11 @@ def create_living_plan(project_id: str, db: Session = Depends(get_db)) -> Living
 
 @router.post("/projects/{project_id}/home-coach", response_model=HomeCoachPackage)
 def create_home_coach(project_id: str, db: Session = Depends(get_db)) -> HomeCoachPackage:
+    from app.services.design_review_service import build_local_design_review
+    from app.services.home_coach_service import build_home_coach_package
+    from app.services.living_plan_service import build_living_plan_package
+    from app.services.project_workflow_service import build_project_workflow
+
     detail = get_project(project_id, db)
     if not detail.floorplans or not detail.briefs or not detail.layout_options:
         raise HTTPException(
@@ -756,6 +772,8 @@ def create_home_coach(project_id: str, db: Session = Depends(get_db)) -> HomeCoa
 
 @router.post("/layout-options/{option_id}/render", response_model=RenderAssetDocument)
 def render_layout_option(option_id: str, db: Session = Depends(get_db)) -> RenderAssetDocument:
+    from app.services.openai_service import build_render_prompt, generate_interior_image
+
     option_record = db.get(LayoutOptionModel, option_id)
     if option_record is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Layout option not found.")
