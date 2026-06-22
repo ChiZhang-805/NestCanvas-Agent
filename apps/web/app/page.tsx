@@ -322,8 +322,7 @@ export default function HomePage() {
         <section className="absolute right-8 top-1/2 z-30 hidden w-[380px] -translate-y-1/2 rounded-md border border-white/40 bg-white/66 p-5 text-ink shadow-panel backdrop-blur-xl xl:block">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-bold uppercase text-clay">MVP controls</p>
-              <h2 className="mt-1 text-xl font-bold">快速入口</h2>
+              <h2 className="text-xl font-bold">快速入口</h2>
             </div>
             <span className="rounded-md border border-ink/20 px-2 py-1 text-xs font-bold uppercase">
               Ready

@@ -133,9 +133,9 @@ export function OpenAIKeyPanel({ compact = false }: { compact?: boolean }) {
         compact ? "p-3" : "p-4"
       }`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className={`flex items-center gap-2 text-xs font-black uppercase ${hasBrowserKey ? "text-tide" : "text-clay"}`}>
+      <div className="flex min-h-10 items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className={`flex items-center gap-2 text-sm font-black uppercase leading-none ${hasBrowserKey ? "text-tide" : "text-clay"}`}>
             <KeyRound size={14} aria-hidden="true" />
             OpenAI API Key
           </p>
@@ -143,7 +143,7 @@ export function OpenAIKeyPanel({ compact = false }: { compact?: boolean }) {
         <button
           type="button"
           onClick={refreshStatus}
-          className="focus-ring rounded-md border border-ink/10 p-2 text-ink/70 transition hover:text-ink"
+          className="focus-ring flex size-10 shrink-0 items-center justify-center rounded-md border border-ink/10 text-ink/70 transition hover:text-ink"
           aria-label="刷新 OpenAI 状态"
         >
           <RefreshCw size={15} aria-hidden="true" />
