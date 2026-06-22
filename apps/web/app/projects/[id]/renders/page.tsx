@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, ImageIcon, WandSparkles } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Download, ImageIcon, WandSparkles } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { exportProject, getProject, renderOption, toAssetUrl } from "@/lib/api";
 import { LayoutOption, ProjectDetail, RenderAsset } from "@/lib/types";
@@ -133,8 +134,22 @@ export default function RendersPage({ params }: { params: { id: string } }) {
           </section>
         ))}
         {renders.length === 0 && (
-          <section className="flex aspect-[3/2] items-center justify-center rounded-md border border-dashed border-ink/20 bg-white text-ink/60">
-            <ImageIcon size={40} aria-hidden="true" />
+          <section className="flex aspect-[3/2] items-center justify-center rounded-md border border-dashed border-ink/20 bg-white p-5 text-center text-ink/60">
+            <div>
+              <ImageIcon size={40} className="mx-auto" aria-hidden="true" />
+              <p className="mt-3 text-sm font-bold text-ink">
+                {options.length ? "选择上方方案生成概念图" : "还没有可渲染的布局方案"}
+              </p>
+              {!options.length && (
+                <Link
+                  href={`/projects/${projectId}/options`}
+                  className="focus-ring mt-4 inline-flex items-center gap-2 rounded-md bg-tide px-4 py-2 font-semibold text-white"
+                >
+                  生成布局方案
+                  <ArrowRight size={16} aria-hidden="true" />
+                </Link>
+              )}
+            </div>
           </section>
         )}
       </div>

@@ -29,12 +29,14 @@ function ModelSelect({
   label,
   value,
   options,
-  onChange
+  onChange,
+  showDescription = true
 }: {
   label: string;
   value: string;
   options: OpenAIModelOption[];
   onChange: (value: string) => void;
+  showDescription?: boolean;
 }) {
   const selected = modelSelectValue(value, options);
 
@@ -62,10 +64,12 @@ function ModelSelect({
           autoComplete="off"
           className="focus-ring min-h-10 min-w-0 rounded-md border border-ink/15 bg-white px-2 text-sm font-semibold normal-case tracking-normal text-ink"
         />
-      ) : (
+      ) : showDescription ? (
         <span className="text-[11px] font-semibold normal-case leading-4 tracking-normal text-ink/48">
           {modelDescription(value, options)}
         </span>
+      ) : (
+        <span className="sr-only">{modelDescription(value, options)}</span>
       )}
     </label>
   );
@@ -185,9 +189,27 @@ export function OpenAIKeyPanel({ compact = false }: { compact?: boolean }) {
       </div>
 
       <div className={`mt-3 grid gap-2 ${compact ? "md:grid-cols-3" : "md:grid-cols-3"}`}>
-        <ModelSelect label="解释模型" value={modelText} options={TEXT_MODEL_OPTIONS} onChange={setModelText} />
-        <ModelSelect label="快速模型" value={modelFast} options={FAST_MODEL_OPTIONS} onChange={setModelFast} />
-        <ModelSelect label="图片模型" value={modelImage} options={IMAGE_MODEL_OPTIONS} onChange={setModelImage} />
+        <ModelSelect
+          label="解释模型"
+          value={modelText}
+          options={TEXT_MODEL_OPTIONS}
+          onChange={setModelText}
+          showDescription={!compact}
+        />
+        <ModelSelect
+          label="快速模型"
+          value={modelFast}
+          options={FAST_MODEL_OPTIONS}
+          onChange={setModelFast}
+          showDescription={!compact}
+        />
+        <ModelSelect
+          label="图片模型"
+          value={modelImage}
+          options={IMAGE_MODEL_OPTIONS}
+          onChange={setModelImage}
+          showDescription={!compact}
+        />
       </div>
 
       {!compact && (

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AlertTriangle, CheckCircle2, ClipboardList, ImageIcon, RefreshCw, Sparkles } from "lucide-react";
+import { AlertTriangle, ArrowRight, CheckCircle2, ClipboardList, ImageIcon, RefreshCw, Sparkles } from "lucide-react";
 import { FloorPlanSvg } from "@/components/FloorPlanSvg";
 import { PageShell } from "@/components/PageShell";
 import { createDesignReview, createLayoutOptions, getProject } from "@/lib/api";
@@ -84,6 +84,12 @@ export default function OptionsPage({ params }: { params: { id: string } }) {
 
   const floorplan: FloorPlan | null = project?.floorplans.at(-1) ?? null;
   const options: LayoutOption[] = project?.layout_options ?? [];
+  const missingPrereqs = project
+    ? [
+        ...(floorplan ? [] : [{ label: "校正户型", href: `/projects/${projectId}/floorplan` }]),
+        ...(project.briefs.length ? [] : [{ label: "填写需求", href: `/projects/${projectId}/brief` }])
+      ]
+    : [];
   const selected = options.find((option) => option.id === selectedId) ?? options[0] ?? null;
   const selectedReview =
     review?.option_reviews.find((item) => item.option_id === selected?.id) ??
@@ -97,7 +103,7 @@ export default function OptionsPage({ params }: { params: { id: string } }) {
         <button
           type="button"
           onClick={generate}
-          disabled={busy}
+          disabled={busy || missingPrereqs.length > 0}
           className="focus-ring inline-flex items-center gap-2 rounded-md bg-tide px-4 py-2.5 font-semibold text-white disabled:opacity-60"
         >
           <RefreshCw size={17} aria-hidden="true" />
@@ -138,6 +144,30 @@ export default function OptionsPage({ params }: { params: { id: string } }) {
         </button>
         {error && <span className="text-sm text-clay">{error}</span>}
       </div>
+      {missingPrereqs.length > 0 && (
+        <section className="mb-5 rounded-md border border-clay/20 bg-flax p-4 text-sm text-ink shadow-panel">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="font-bold">生成布局前需要补齐输入</p>
+              <p className="mt-1 text-ink/65">
+                缺少：{missingPrereqs.map((item) => item.label).join("、")}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {missingPrereqs.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="focus-ring inline-flex items-center gap-2 rounded-md border border-ink/15 bg-white px-3 py-2 font-semibold text-ink"
+                >
+                  {item.label}
+                  <ArrowRight size={15} aria-hidden="true" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
       {selected ? (
         <div className="grid gap-5 lg:grid-cols-[1.25fr_0.75fr]">
           <section className="rounded-md border border-ink/10 bg-white p-4 shadow-panel">

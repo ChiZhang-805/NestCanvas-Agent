@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowRight, Save } from "lucide-react";
+import { ArrowRight, Database, Save, Upload } from "lucide-react";
 import { FloorPlanSvg } from "@/components/FloorPlanSvg";
 import { PageShell } from "@/components/PageShell";
 import { getProject, patchFloorplan } from "@/lib/api";
@@ -126,7 +126,28 @@ export default function FloorplanPage({ params }: { params: { id: string } }) {
               {message && <p className="mt-3 text-sm text-tide">{message}</p>}
             </>
           ) : (
-            <p className="text-sm text-ink/65">暂无 FloorPlan。</p>
+            <div className="rounded-md border border-dashed border-ink/15 bg-cloud p-5">
+              <p className="text-sm font-bold text-ink">暂无可校正户型</p>
+              <p className="mt-2 text-sm leading-6 text-ink/62">
+                先上传图片/PDF 解析，或从户型库选一个相似模板作为起点。
+              </p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Link
+                  href={`/projects/${projectId}/upload`}
+                  className="focus-ring inline-flex items-center gap-2 rounded-md bg-tide px-4 py-2 font-semibold text-white"
+                >
+                  <Upload size={17} aria-hidden="true" />
+                  上传解析
+                </Link>
+                <Link
+                  href={`/projects/${projectId}/library`}
+                  className="focus-ring inline-flex items-center gap-2 rounded-md border border-ink/15 bg-white px-4 py-2 font-semibold text-ink"
+                >
+                  <Database size={17} aria-hidden="true" />
+                  去户型库
+                </Link>
+              </div>
+            </div>
           )}
         </section>
       </div>

@@ -170,6 +170,18 @@ def test_floorplan_library_search_and_select_template(client):
     assert any("户型库" in warning for warning in selected["warnings"])
 
 
+def test_floorplan_library_expands_compact_chinese_queries(client):
+    response = client.get("/api/floorplan-library?query=一家三口收纳&bedrooms=2")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["items"]
+    top = payload["items"][0]
+    assert top["bedrooms"] == 2
+    assert "storage" in top["tags"] or "school_age_child" in top["tags"]
+    assert top["match_score"] >= 78
+
+
 def test_openai_settings_status_accepts_browser_key_header(client):
     mock_response = client.get("/api/settings/openai")
     assert mock_response.status_code == 200

@@ -44,7 +44,7 @@ npm run dev
 本仓库根目录包含 `render.yaml`，可用 Render Blueprint 一键创建两个 public web services：
 
 - `nestcanvas-api`：FastAPI 后端，健康检查 `/healthz`。
-- `nestcanvas-web`：Next.js 前端，面向用户公开访问；前端通过 Render 内网代理 `/api/*` 和 `/storage/*` 到后端。
+- `nestcanvas-web`：Next.js 前端，面向用户公开访问；前端通过 `NESTCANVAS_API_BASE_URL` 代理 `/api/*` 和 `/storage/*` 到后端。Render Free plan 下默认使用 API 的 public `.onrender.com` 地址，避免 free web service 不能接收私网流量的问题。
 
 一键部署链接：
 
@@ -97,7 +97,7 @@ npm run typecheck
 ## 已实现功能
 
 - 项目创建、聚合读取。
-- 网页 OpenAI API Key 设置面板；支持浏览器 Key、`.env` Key、无 Key mock 三种模式。
+- 网页 OpenAI 设置面板；支持浏览器 Key/模型覆盖、`.env` Key、无 Key mock 三种模式。
 - PNG/JPG/WEBP/PDF 上传到 `storage/` 并写入 DB。
 - 输入整理：支持手机拍摄售楼册、截图、偏斜/低对比图片，先用 OpenCV 做透视拉正、内容裁剪、对比度增强和线条锐化，再生成 `prepared_image` 供解析优先使用。
 - 无图兜底：用户暂时没有空房照或户型图时，可先创建低置信度草稿底图进入需求和方案流程，后续再用真实素材替换校正。
@@ -140,7 +140,7 @@ npm run typecheck
 - 布局规则覆盖常见客厅、卧室、餐厨、卫生间占位；二期可加入窗前避让、动线图、更多家具模板。
 - 生活方案包的价格带是本地经验规则，占位用于产品闭环；上线前应接入授权家具/材料价格库，并按城市和品牌层级校正。
 - 本项目不输出施工图，不判断承重墙，不做结构安全结论。
-- 如果使用网页 Key 且 `SYNC_JOBS=false`，异步 worker 不能读取浏览器请求头；worker 场景请把 Key 放到 `.env`。
+- 如果使用网页 Key 或网页模型覆盖且 `SYNC_JOBS=false`，异步 worker 不能读取浏览器请求头；worker 场景请把 Key 和默认模型放到 `.env`。
 
 ## OpenAI API 使用位置
 

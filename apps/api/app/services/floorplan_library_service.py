@@ -13,6 +13,47 @@ from app.schemas.domain import (
 from app.services.geometry_service import normalize_polygon, polygon_area_m2
 
 
+QUERY_SYNONYMS: dict[str, tuple[str, ...]] = {
+    "一家三口": ("family", "small_family", "school_age_child", "two_bedroom"),
+    "三口之家": ("family", "small_family", "school_age_child", "two_bedroom"),
+    "亲子": ("family", "school_age_child", "three_bedroom"),
+    "孩子": ("family", "school_age_child", "child"),
+    "儿童": ("family", "school_age_child", "child"),
+    "二孩": ("family", "high_storage", "three_bedroom"),
+    "老人": ("elderly", "multi_generation", "guest_room"),
+    "老人房": ("elderly", "multi_generation", "guest_room"),
+    "三代": ("multi_generation", "elderly", "four_bedroom"),
+    "收纳": ("storage", "high_storage"),
+    "高收纳": ("storage", "high_storage"),
+    "储物": ("storage", "high_storage"),
+    "采光": ("daylight", "balcony"),
+    "阳台": ("balcony", "daylight"),
+    "办公": ("work_from_home", "study"),
+    "书房": ("study", "work_from_home"),
+    "独居": ("single", "studio", "one_bedroom"),
+    "情侣": ("couple", "one_bedroom"),
+    "开间": ("studio", "single"),
+    "四房": ("four_bedroom", "multi_generation"),
+    "四居": ("four_bedroom", "multi_generation"),
+    "三房": ("three_bedroom", "family"),
+    "三居": ("three_bedroom", "family"),
+    "两房": ("two_bedroom", "family"),
+    "两居": ("two_bedroom", "family"),
+}
+
+
+def _expand_query_tokens(value: str | None) -> list[str]:
+    normalized = (value or "").lower().replace(",", " ").replace("，", " ")
+    raw_tokens = [token.strip() for token in normalized.split() if token.strip()]
+    expanded: set[str] = set(raw_tokens)
+    compact = normalized.replace(" ", "")
+    for keyword, synonyms in QUERY_SYNONYMS.items():
+        if keyword.lower() in normalized or keyword.lower() in compact:
+            expanded.add(keyword.lower())
+            expanded.update(token.lower() for token in synonyms)
+    return sorted(expanded)
+
+
 def _rect(x: float, y: float, width: float, height: float) -> list[list[float]]:
     return normalize_polygon(
         [
@@ -337,8 +378,8 @@ def search_floorplan_library(
     tags: str | None = None,
     limit: int = 12,
 ) -> list[FloorPlanLibraryItem]:
-    query_tokens = [token.strip() for token in (query or "").replace(",", " ").split() if token.strip()]
-    tag_tokens = {token.strip() for token in (tags or "").replace(",", " ").split() if token.strip()}
+    query_tokens = _expand_query_tokens(query)
+    tag_tokens = set(_expand_query_tokens(tags))
     results: list[FloorPlanLibraryItem] = []
 
     for template in _templates():
