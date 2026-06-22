@@ -4,8 +4,14 @@ import Link from "next/link";
 import { AlertTriangle, CheckCircle2, ClipboardList, RefreshCw, Send, ShoppingBag } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { PageShell } from "@/components/PageShell";
-import { createLivingPlan } from "@/lib/api";
-import { LivingPlanPackage, LivingShoppingItem } from "@/lib/types";
+import { createLivingPlan, getProject } from "@/lib/api";
+import { LivingPlanPackage, LivingShoppingItem, ProjectDetail } from "@/lib/types";
+
+type LivingPlanBlocker = {
+  label: string;
+  description: string;
+  href: string;
+};
 
 function money(value: number) {
   if (value >= 10000) return `${(value / 10000).toFixed(1)} 万`;
@@ -35,9 +41,36 @@ function priorityClass(priority: LivingShoppingItem["priority"]) {
   return "bg-cloud text-ink";
 }
 
+function livingPlanBlockers(projectId: string, detail: ProjectDetail): LivingPlanBlocker[] {
+  return [
+    detail.floorplans.length
+      ? null
+      : {
+          label: "校正户型",
+          description: "先获得可量尺的 FloorPlan，采购尺寸和动线判断才可靠。",
+          href: `/projects/${projectId}/floorplan`
+        },
+    detail.briefs.length
+      ? null
+      : {
+          label: "填写需求",
+          description: "补齐预算、成员、风格和收纳偏好，清单才能按真实生活排序。",
+          href: `/projects/${projectId}/brief`
+        },
+    detail.layout_options.length
+      ? null
+      : {
+          label: "生成方案",
+          description: "生活清单会从已选布局方案提取家具、预算和复用建议。",
+          href: `/projects/${projectId}/options`
+        }
+  ].filter((item): item is LivingPlanBlocker => item !== null);
+}
+
 export default function LivingPlanPage({ params }: { params: { id: string } }) {
   const projectId = params.id;
   const [plan, setPlan] = useState<LivingPlanPackage | null>(null);
+  const [blockers, setBlockers] = useState<LivingPlanBlocker[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,6 +78,13 @@ export default function LivingPlanPage({ params }: { params: { id: string } }) {
     setBusy(true);
     setError(null);
     try {
+      const detail = await getProject(projectId);
+      const nextBlockers = livingPlanBlockers(projectId, detail);
+      setBlockers(nextBlockers);
+      if (nextBlockers.length) {
+        setPlan(null);
+        return;
+      }
       setPlan(await createLivingPlan(projectId));
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "生活方案包生成失败");
@@ -67,7 +107,7 @@ export default function LivingPlanPage({ params }: { params: { id: string } }) {
           className="focus-ring inline-flex items-center gap-2 rounded-md bg-tide px-4 py-2.5 font-semibold text-white disabled:opacity-60"
         >
           <RefreshCw size={17} aria-hidden="true" />
-          {busy ? "生成中" : "刷新清单"}
+          {busy ? "检查中" : "刷新清单"}
         </button>
         <Link
           href={`/projects/${projectId}/renders`}
@@ -78,6 +118,30 @@ export default function LivingPlanPage({ params }: { params: { id: string } }) {
         </Link>
         {error && <span className="text-sm text-clay">{error}</span>}
       </div>
+
+      {blockers.length > 0 && !busy ? (
+        <section className="mb-5 rounded-md border border-clay/25 bg-white p-5 shadow-panel">
+          <div className="flex items-start gap-3">
+            <AlertTriangle size={20} className="mt-0.5 shrink-0 text-clay" aria-hidden="true" />
+            <div>
+              <h2 className="text-lg font-bold text-ink">生活清单还缺前置材料</h2>
+              <p className="mt-2 text-sm leading-6 text-ink/66">先补齐下面步骤，再生成采购优先级、预算阶段和设计师交接问题。</p>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {blockers.map((blocker) => (
+              <Link
+                key={blocker.href}
+                href={blocker.href}
+                className="focus-ring rounded-md border border-ink/10 bg-cloud/45 p-4 transition hover:border-tide hover:bg-white"
+              >
+                <p className="font-bold text-ink">{blocker.label}</p>
+                <p className="mt-2 text-sm leading-6 text-ink/64">{blocker.description}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {plan ? (
         <div className="grid gap-5">
@@ -226,7 +290,7 @@ export default function LivingPlanPage({ params }: { params: { id: string } }) {
         </div>
       ) : (
         <section className="rounded-md border border-ink/10 bg-white p-5 text-sm text-ink/65 shadow-panel">
-          {busy ? "正在生成生活方案包。" : "请先生成布局方案。"}
+          {busy ? "正在检查并生成生活方案包。" : blockers.length ? "按上方步骤补齐材料后再刷新。" : "暂无生活方案包。"}
         </section>
       )}
     </PageShell>
