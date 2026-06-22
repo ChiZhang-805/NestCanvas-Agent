@@ -15,6 +15,10 @@ const nextConfig = {
       {
         source: "/storage/:path*",
         destination: `${nestCanvasApiBase}/storage/:path*`
+      },
+      {
+        source: "/library-assets/floorplans/:path*",
+        destination: `${nestCanvasApiBase}/library-assets/floorplans/:path*`
       }
     ];
   }

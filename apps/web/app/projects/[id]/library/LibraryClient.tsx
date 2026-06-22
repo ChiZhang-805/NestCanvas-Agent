@@ -4,7 +4,7 @@ import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 import { ArrowRight, CheckCircle2, Database, ExternalLink, Filter, Search } from "lucide-react";
 import { FloorPlanSvg } from "@/components/FloorPlanSvg";
-import { createLibraryFloorplan, searchFloorplanLibrary } from "@/lib/api";
+import { backendAssetUrl, createLibraryFloorplan, searchFloorplanLibrary } from "@/lib/api";
 import { FloorPlanDatasetSource, FloorPlanLibraryItem } from "@/lib/types";
 
 const bedroomOptions = [
@@ -272,7 +272,7 @@ export function LibraryClient({
                 <div className="aspect-[4/3] overflow-hidden rounded-md bg-cloud">
                   {item.preview_image_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.preview_image_url} alt={item.title} className="h-full w-full object-cover" />
+                    <img src={backendAssetUrl(item.preview_image_url) ?? ""} alt={item.title} className="h-full w-full object-cover" />
                   ) : (
                     <div className="h-full w-full p-2">
                       <FloorPlanSvg floorplan={item.floorplan} compact />
