@@ -18,13 +18,6 @@ import {
 } from "@/lib/openaiModels";
 import { OpenAISettingsStatus } from "@/lib/types";
 
-function sourceLabel(status: OpenAISettingsStatus | null) {
-  if (!status) return "检测中";
-  if (status.source === "browser") return "浏览器设置";
-  if (status.source === "env") return ".env Key";
-  return "Mock 模式";
-}
-
 function ModelSelect({
   label,
   value,
@@ -82,6 +75,7 @@ export function OpenAIKeyPanel({ compact = false }: { compact?: boolean }) {
   const [modelImage, setModelImage] = useState("gpt-image-2");
   const [status, setStatus] = useState<OpenAISettingsStatus | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const hasBrowserKey = value.trim().length > 0;
 
   async function refreshStatus() {
     try {
@@ -141,12 +135,9 @@ export function OpenAIKeyPanel({ compact = false }: { compact?: boolean }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="flex items-center gap-2 text-xs font-black uppercase text-clay">
+          <p className={`flex items-center gap-2 text-xs font-black uppercase ${hasBrowserKey ? "text-tide" : "text-clay"}`}>
             <KeyRound size={14} aria-hidden="true" />
             OpenAI API Key
-          </p>
-          <p className="mt-1 text-sm font-semibold text-ink/70">
-            当前：{sourceLabel(status)}
           </p>
         </div>
         <button
@@ -218,11 +209,6 @@ export function OpenAIKeyPanel({ compact = false }: { compact?: boolean }) {
         </p>
       )}
       {message && <p className="mt-2 text-xs font-bold text-tide">{message}</p>}
-      {status && (
-        <p className="mt-2 text-xs text-ink/48">
-          text {status.text_model} · fast {status.fast_model} · image {status.image_model}
-        </p>
-      )}
     </section>
   );
 }
