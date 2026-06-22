@@ -37,6 +37,14 @@ npm install
 npm run dev
 ```
 
+默认前端通过 Next.js 同源 `/api` 和 `/storage` 代理访问后端，代理目标为：
+
+```env
+NESTCANVAS_API_BASE_URL=http://127.0.0.1:8000
+```
+
+`NEXT_PUBLIC_API_BASE_URL` 只在需要浏览器直连后端时设置；默认留空可避免跨端口 CORS 和本机端口冲突。
+
 打开 `http://localhost:3000`。
 
 ## Render Blueprint 部署
@@ -66,7 +74,8 @@ https://render.com/deploy?repo=https://github.com/ChiZhang-805/NestCanvas-Agent
 - `SYNC_JOBS`：`true` 时解析任务同步执行，适合本地 demo 和测试；生产可设为 `false` 并启动 RQ worker。
 - `OPENAI_API_KEY`：为空时所有 AI 相关函数走 deterministic mock。
 - `OPENAI_MODEL_TEXT`、`OPENAI_MODEL_FAST`、`OPENAI_IMAGE_MODEL`：集中由 `openai_service.py` 读取；网页端可按当前浏览器覆盖这些模型。
-- `NEXT_PUBLIC_API_BASE_URL`：前端访问 FastAPI 的地址。
+- `NESTCANVAS_API_BASE_URL`：Next.js `/api` 和 `/storage` 代理目标，默认 `http://127.0.0.1:8000`。
+- `NEXT_PUBLIC_API_BASE_URL`：可选浏览器直连 API 地址，默认留空。
 
 也可以不写 `.env` 的 `OPENAI_API_KEY`，直接在网页里的 **OpenAI API Key** 面板填写。网页 Key 和模型选择只保存在当前浏览器 `localStorage`，随后通过请求头发送给本机 FastAPI；后端不会把它写入数据库。适合本地演示、公开 demo 或临时切换账号；长期部署可把站主默认 Key 放到 `.env`。
 
@@ -87,7 +96,7 @@ npm run typecheck
 
 当前验证结果：
 
-- `pytest apps/api/tests -q`：17 passed。
+- `pytest apps/api/tests -q`：18 passed。
 - `npm run typecheck`：通过。
 - `npm run lint`：无警告或错误。
 - `npm run build`：通过。
