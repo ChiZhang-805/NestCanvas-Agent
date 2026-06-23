@@ -98,7 +98,7 @@ export default function LivingPlanPage({ params }: { params: { id: string } }) {
   }, [load]);
 
   return (
-    <PageShell projectId={projectId} current="living" title="生活方案清单">
+    <PageShell projectId={projectId} current="living" title="生活方案清单" currentStepReady={Boolean(plan)}>
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <button
           type="button"
@@ -109,13 +109,15 @@ export default function LivingPlanPage({ params }: { params: { id: string } }) {
           <RefreshCw size={17} aria-hidden="true" />
           {busy ? "检查中" : "刷新清单"}
         </button>
-        <Link
-          href={`/projects/${projectId}/renders`}
-          className="focus-ring inline-flex items-center gap-2 rounded-md border border-ink/15 bg-white px-4 py-2.5 font-semibold text-ink"
-        >
-          <Send size={17} aria-hidden="true" />
-          去渲染
-        </Link>
+        {plan ? (
+          <Link
+            href={`/projects/${projectId}/renders`}
+            className="focus-ring inline-flex items-center gap-2 rounded-md border border-ink/15 bg-white px-4 py-2.5 font-semibold text-ink"
+          >
+            <Send size={17} aria-hidden="true" />
+            去渲染
+          </Link>
+        ) : null}
         {error && <span className="text-sm text-clay">{error}</span>}
       </div>
 

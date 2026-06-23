@@ -13,6 +13,7 @@ import {
   toAssetUrl,
   uploadAsset
 } from "@/lib/api";
+import { notifyProjectUpdated } from "@/lib/projectEvents";
 import { InputPreparationResult, JobStatus } from "@/lib/types";
 
 function wait(ms: number) {
@@ -100,6 +101,8 @@ export default function UploadPage({ params }: { params: { id: string } }) {
       }
       if (!terminalStatus) {
         setError("解析任务仍在运行，请稍后刷新任务状态或重试。");
+      } else if (terminalStatus.status === "completed") {
+        notifyProjectUpdated(projectId);
       }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "上传或解析失败");
@@ -113,6 +116,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
     setError(null);
     try {
       await createStarterFloorplan(projectId);
+      notifyProjectUpdated(projectId);
       router.push(`/projects/${projectId}/floorplan`);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "创建草稿底图失败");
@@ -171,21 +175,27 @@ export default function UploadPage({ params }: { params: { id: string } }) {
           </div>
         </section>
         <section className="h-fit rounded-md border border-ink/10 bg-white p-5 shadow-panel">
-          <label className="block text-sm font-medium text-ink" htmlFor="floorplan-upload">
-            图片 / PDF / 售楼册拍照
+          <label className="block text-sm font-bold text-ink" htmlFor="floorplan-upload">
+            上传文件
           </label>
           <input
             id="floorplan-upload"
             type="file"
             accept="image/png,image/jpeg,image/webp,application/pdf"
             onChange={selectFile}
-            className="focus-ring mt-3 w-full rounded-md border border-ink/15 px-3 py-2"
+            className="sr-only"
           />
-          <div className="mt-4 flex flex-wrap gap-2">
-            <span className="rounded-md bg-cloud px-3 py-2 text-xs font-bold text-ink/68">手机拍摄</span>
-            <span className="rounded-md bg-cloud px-3 py-2 text-xs font-bold text-ink/68">售楼册</span>
-            <span className="rounded-md bg-cloud px-3 py-2 text-xs font-bold text-ink/68">截图</span>
-            <span className="rounded-md bg-cloud px-3 py-2 text-xs font-bold text-ink/68">PDF</span>
+          <div className="mt-3 grid grid-cols-[1fr_auto] overflow-hidden rounded-md border border-ink/15 bg-white">
+            <div className="flex min-h-12 min-w-0 items-center px-3 text-sm font-semibold text-ink/62">
+              <span className="truncate">{file ? file.name : "未选择任何文件"}</span>
+            </div>
+            <label
+              htmlFor="floorplan-upload"
+              title="选择文件"
+              className="focus-ring flex min-h-12 w-12 cursor-pointer items-center justify-center border-l border-ink/15 text-ink transition hover:bg-cloud"
+            >
+              <Upload size={18} aria-hidden="true" />
+            </label>
           </div>
           <div className="mt-5 grid gap-2 sm:grid-cols-2">
             <button

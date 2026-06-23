@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { FolderKanban, Home, Library, Sparkles, Upload, WandSparkles } from "lucide-react";
+import { Home, Library, Settings, Sparkles, Upload, WandSparkles } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { OpenAIKeyPanel } from "@/components/OpenAIKeyPanel";
 import { StepNav } from "@/components/StepNav";
 
 const utilityLinks = [
   { label: "首页", href: "/", icon: Home },
-  { label: "项目", href: "upload", icon: FolderKanban },
+  { label: "设置", href: "/settings", icon: Settings },
   { label: "上传", href: "upload", icon: Upload },
   { label: "户型库", href: "library", icon: Library },
   { label: "助手", href: "coach", icon: Sparkles }
@@ -18,11 +17,13 @@ export function PageShell({
   projectId,
   current,
   title,
+  currentStepReady,
   children
 }: {
   projectId: string;
   current: string;
   title: string;
+  currentStepReady?: boolean;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -40,7 +41,7 @@ export function PageShell({
               <span className="block text-xs font-semibold text-ink/55">Home design canvas</span>
             </span>
           </Link>
-          <StepNav projectId={projectId} current={current} />
+          <StepNav projectId={projectId} current={current} currentStepReady={currentStepReady} />
         </div>
       </header>
       <div className="flex min-h-0 w-full flex-1 overflow-hidden px-5">
@@ -68,18 +69,9 @@ export function PageShell({
 
         <div data-shell-content className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden py-5 xl:pl-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-xs font-black uppercase text-clay">Project studio</p>
-              <h1 className="mt-2 text-3xl font-black leading-tight text-ink sm:text-4xl">{title}</h1>
-            </div>
-            <span className="max-w-full truncate rounded-md border border-ink/10 bg-white px-3 py-2 text-xs font-bold text-ink/68">
-              {projectId}
-            </span>
+            <h1 className="text-3xl font-black leading-tight text-ink sm:text-4xl">{title}</h1>
           </div>
-          <div className="mt-5 max-w-[920px]">
-            <OpenAIKeyPanel compact />
-          </div>
-          <div className="mt-6">{children}</div>
+          <div className="mt-5">{children}</div>
         </div>
       </div>
     </main>

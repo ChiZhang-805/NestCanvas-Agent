@@ -8,14 +8,15 @@ import {
   ImageIcon,
   MessageSquareText,
   Ruler,
+  Settings,
   Sofa,
   Upload,
   WandSparkles
 } from "lucide-react";
 import { BeforeAfterHero, HeroMode } from "@/components/BeforeAfterHero";
-import { OpenAIKeyPanel } from "@/components/OpenAIKeyPanel";
 import { createProject } from "@/lib/api";
 import { useProjectStore } from "@/store/projectStore";
+import Link from "next/link";
 
 const workflow = [
   { key: "upload", label: "上传", icon: Upload },
@@ -117,6 +118,13 @@ export default function HomePage() {
             <span className="hidden rounded-md border border-ink/25 bg-white/64 px-4 py-2 text-xs font-bold uppercase backdrop-blur sm:inline-flex">
               Local Engine
             </span>
+            <Link
+              href="/settings"
+              className="focus-ring inline-flex items-center gap-2 rounded-md border border-ink/25 bg-white/64 px-3 py-2 text-xs font-bold uppercase backdrop-blur transition hover:bg-white"
+            >
+              <Settings size={15} aria-hidden="true" />
+              设置
+            </Link>
             <button
               type="button"
               onClick={createUploadProject}
@@ -234,10 +242,6 @@ export default function HomePage() {
             onChange={(event) => setTitle(event.target.value)}
             className="focus-ring mt-2 min-h-12 w-full rounded-md border border-ink/20 bg-white/78 px-4 font-bold text-ink"
           />
-
-          <div className="mt-4">
-            <OpenAIKeyPanel compact />
-          </div>
 
           <button
             type="button"

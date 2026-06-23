@@ -399,7 +399,47 @@ def _source_for(source_id: str) -> FloorPlanDatasetSource:
     return next(source for source in DATASET_SOURCES if source.id == source_id)
 
 
-def _score_template(
+def _searchable_text(template: LibraryTemplate) -> str:
+    return " ".join(
+        [
+            template.title,
+            template.region,
+            " ".join(template.tags),
+            " ".join(template.household_fit),
+        ]
+    ).lower()
+
+
+def _condition_matches(
+    template: LibraryTemplate,
+    query_tokens: Iterable[str],
+    bedrooms: int | None,
+    min_area: float | None,
+    max_area: float | None,
+    dataset: str | None,
+    tag_tokens: set[str],
+) -> tuple[int, int]:
+    searchable = _searchable_text(template)
+    checks: list[bool] = []
+
+    query_tokens = [token.lower() for token in query_tokens if token]
+    if query_tokens:
+        checks.append(any(token in searchable for token in query_tokens))
+    if bedrooms is not None:
+        checks.append(template.bedrooms == bedrooms)
+    if min_area is not None:
+        checks.append(template.area_m2 >= min_area)
+    if max_area is not None:
+        checks.append(template.area_m2 <= max_area)
+    if dataset:
+        checks.append(template.source_dataset_id == dataset)
+    if tag_tokens:
+        checks.append(bool(tag_tokens.intersection(set(template.tags))))
+
+    return len(checks), sum(1 for matched in checks if matched)
+
+
+def _base_relevance_score(
     template: LibraryTemplate,
     query_tokens: Iterable[str],
     bedrooms: int | None,
@@ -409,14 +449,7 @@ def _score_template(
     tag_tokens: set[str],
 ) -> float:
     score = 42.0
-    searchable = " ".join(
-        [
-            template.title,
-            template.region,
-            " ".join(template.tags),
-            " ".join(template.household_fit),
-        ]
-    ).lower()
+    searchable = _searchable_text(template)
 
     for token in query_tokens:
         if token and token.lower() in searchable:
@@ -438,6 +471,26 @@ def _score_template(
     return round(min(score, 100.0), 1)
 
 
+def _score_template(
+    template: LibraryTemplate,
+    query_tokens: Iterable[str],
+    bedrooms: int | None,
+    min_area: float | None,
+    max_area: float | None,
+    dataset: str | None,
+    tag_tokens: set[str],
+) -> tuple[float, int, int]:
+    active_count, matched_count = _condition_matches(
+        template, query_tokens, bedrooms, min_area, max_area, dataset, tag_tokens
+    )
+    base_score = _base_relevance_score(template, query_tokens, bedrooms, min_area, max_area, dataset, tag_tokens)
+    if active_count == 0:
+        return base_score, matched_count, active_count
+    condition_score = (matched_count / active_count) * 70
+    score = round(min(100.0, condition_score + base_score * 0.3), 1)
+    return score, matched_count, active_count
+
+
 def search_floorplan_library(
     query: str | None = None,
     bedrooms: int | None = None,
@@ -452,15 +505,10 @@ def search_floorplan_library(
     results: list[FloorPlanLibraryItem] = []
 
     for template in _templates():
-        if dataset and template.source_dataset_id != dataset:
-            continue
-        if bedrooms is not None and abs(template.bedrooms - bedrooms) > 1:
-            continue
-        if min_area is not None and template.area_m2 < min_area:
-            continue
-        if max_area is not None and template.area_m2 > max_area:
-            continue
-        if tag_tokens and not tag_tokens.intersection(set(template.tags)):
+        match_score, matched_count, active_count = _score_template(
+            template, query_tokens, bedrooms, min_area, max_area, dataset, tag_tokens
+        )
+        if active_count and matched_count == 0:
             continue
 
         source = _source_for(template.source_dataset_id)
@@ -479,18 +527,29 @@ def search_floorplan_library(
                 region=template.region,
                 tags=list(template.tags),
                 household_fit=list(template.household_fit),
-                match_score=_score_template(
-                    template, query_tokens, bedrooms, min_area, max_area, dataset, tag_tokens
-                ),
+                match_score=match_score,
                 preview_image_url=template.preview_image_url,
                 preview_kind=template.preview_kind,
                 floorplan=template.floorplan,
             )
         )
 
-    return sorted(results, key=lambda item: item.match_score, reverse=True)[: max(1, min(limit, 120))]
+    target_area = (
+        ((min_area if min_area is not None else max_area) + (max_area if max_area is not None else min_area)) / 2
+        if min_area is not None or max_area is not None
+        else None
+    )
+    return sorted(
+        results,
+        key=lambda item: (
+            item.match_score,
+            1 if bedrooms is not None and item.bedrooms == bedrooms else 0,
+            -abs(item.area_m2 - target_area) if target_area is not None else 0,
+        ),
+        reverse=True,
+    )[: max(1, min(limit, 120))]
 
 
 def get_floorplan_template(template_id: str) -> FloorPlanLibraryItem | None:
-    matches = [item for item in search_floorplan_library(limit=50) if item.id == template_id]
+    matches = [item for item in search_floorplan_library(limit=120) if item.id == template_id]
     return matches[0] if matches else None

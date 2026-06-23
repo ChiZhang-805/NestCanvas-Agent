@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
-import { ArrowRight, CheckCircle2, Database, ExternalLink, Filter, Search } from "lucide-react";
+import { FormEvent, useState } from "react";
+import { ArrowRight, CheckCircle2, Filter, Search } from "lucide-react";
 import { FloorPlanSvg } from "@/components/FloorPlanSvg";
 import { backendAssetUrl, createLibraryFloorplan, searchFloorplanLibrary } from "@/lib/api";
+import { notifyProjectUpdated } from "@/lib/projectEvents";
 import { FloorPlanDatasetSource, FloorPlanLibraryItem } from "@/lib/types";
 
 const bedroomOptions = [
@@ -22,18 +23,6 @@ function optionalPositiveNumber(value: string): number | undefined {
   if (value.trim() === "") return undefined;
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
-}
-
-function commercialLabel(value: FloorPlanDatasetSource["commercial_use"]) {
-  if (value === "allowed") return "开放源";
-  if (value === "restricted") return "研究源";
-  return "待核验";
-}
-
-function licenseTone(value: FloorPlanDatasetSource["commercial_use"]) {
-  if (value === "allowed") return "bg-moss/12 text-moss";
-  if (value === "restricted") return "bg-clay/12 text-clay";
-  return "bg-ink/8 text-ink/62";
 }
 
 export function LibraryClient({
@@ -58,8 +47,6 @@ export function LibraryClient({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(initialMessage ?? null);
-
-  const sourceById = useMemo(() => new Map(sources.map((source) => [source.id, source])), [sources]);
 
   async function load(event?: FormEvent<HTMLFormElement>) {
     event?.preventDefault();
@@ -93,6 +80,7 @@ export function LibraryClient({
     setMessage(null);
     try {
       await createLibraryFloorplan(projectId, template.id);
+      notifyProjectUpdated(projectId);
       setMessage(`已选用：${template.title}`);
     } catch (caught) {
       setMessage(caught instanceof Error ? caught.message : "选用模板失败");
@@ -108,10 +96,10 @@ export function LibraryClient({
           <div>
             <div className="flex items-center gap-2 text-xs font-bold uppercase text-clay">
               <Filter size={15} aria-hidden="true" />
-              Retrieval filters
+              筛选条件
             </div>
             <p className="mt-2 text-sm leading-6 text-ink/62">
-              上方筛选，下方显示完整户型卡片。现在返回结构化种子样本，外部数据导入后会显示真实图片或数据缩略图。
+              空条件表示不限；满足条件越多的户型会排在越前面。
             </p>
           </div>
           <Link
@@ -215,46 +203,8 @@ export function LibraryClient({
         )}
       </section>
 
-      <section className="rounded-md border border-ink/10 bg-white p-4 shadow-panel">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-sm font-bold text-ink">
-            <Database size={16} aria-hidden="true" />
-            数据源状态
-          </div>
-          <p className="text-xs font-semibold text-ink/55">
-            当前 {items.length} 个可检索样本，真实数据子集可按同一 schema 挂入。
-          </p>
-        </div>
-        <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
-          {sources.map((source) => (
-            <a
-              key={source.id}
-              href={source.url.startsWith("http") ? source.url : undefined}
-              target="_blank"
-              rel="noreferrer"
-              className="focus-ring min-w-0 rounded-md border border-ink/10 p-3 transition hover:border-ink/35"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="truncate font-bold text-ink">{source.name}</span>
-                <span className={`shrink-0 rounded-md px-2 py-1 text-[11px] font-black ${licenseTone(source.commercial_use)}`}>
-                  {commercialLabel(source.commercial_use)}
-                </span>
-              </div>
-              <p className="mt-2 line-clamp-2 text-xs leading-5 text-ink/58">{source.license}</p>
-              {source.url.startsWith("http") && (
-                <span className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-tide">
-                  来源
-                  <ExternalLink size={12} aria-hidden="true" />
-                </span>
-              )}
-            </a>
-          ))}
-        </div>
-      </section>
-
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {items.map((item) => {
-          const source = sourceById.get(item.source_dataset_id);
           const selected = selectedId === item.id;
           return (
             <article
@@ -308,15 +258,7 @@ export function LibraryClient({
                   ))}
                 </div>
 
-                <div className="mt-3 flex items-center justify-between gap-3 border-t border-ink/10 pt-3">
-                  <span
-                    className={`min-w-0 truncate rounded-md px-2 py-1 text-[11px] font-black ${
-                      licenseTone(item.commercial_use)
-                    }`}
-                    title={item.license}
-                  >
-                    {source ? commercialLabel(source.commercial_use) : commercialLabel(item.commercial_use)}
-                  </span>
+                <div className="mt-3 flex items-center justify-end gap-3 border-t border-ink/10 pt-3">
                   <button
                     type="button"
                     onClick={() => chooseTemplate(item)}

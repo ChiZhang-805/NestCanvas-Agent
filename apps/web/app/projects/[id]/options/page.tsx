@@ -6,6 +6,7 @@ import { AlertTriangle, ArrowRight, CheckCircle2, ClipboardList, ImageIcon, Refr
 import { FloorPlanSvg } from "@/components/FloorPlanSvg";
 import { PageShell } from "@/components/PageShell";
 import { createDesignReview, createLayoutOptions, getProject } from "@/lib/api";
+import { notifyProjectUpdated } from "@/lib/projectEvents";
 import { DesignReview, FloorPlan, LayoutOption, ProjectDetail } from "@/lib/types";
 
 export default function OptionsPage({ params }: { params: { id: string } }) {
@@ -74,6 +75,7 @@ export default function OptionsPage({ params }: { params: { id: string } }) {
       setProject((current) =>
         current ? { ...current, layout_options: options } : current
       );
+      notifyProjectUpdated(projectId);
       setReview(await createDesignReview(projectId));
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "生成方案失败");
@@ -98,7 +100,7 @@ export default function OptionsPage({ params }: { params: { id: string } }) {
   const bestReview = review?.option_reviews.find((item) => item.option_id === review.best_option_id);
 
   return (
-    <PageShell projectId={projectId} current="options" title="布局方案对比">
+    <PageShell projectId={projectId} current="options" title="布局方案对比" currentStepReady={options.length > 0}>
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <button
           type="button"
@@ -109,20 +111,24 @@ export default function OptionsPage({ params }: { params: { id: string } }) {
           <RefreshCw size={17} aria-hidden="true" />
           {busy ? "生成中" : "生成 3 套方案"}
         </button>
-        <Link
-          href={`/projects/${projectId}/living`}
-          className="focus-ring inline-flex items-center gap-2 rounded-md border border-ink/15 bg-white px-4 py-2.5 font-semibold text-ink"
-        >
-          <ClipboardList size={17} aria-hidden="true" />
-          清单
-        </Link>
-        <Link
-          href={`/projects/${projectId}/renders`}
-          className="focus-ring inline-flex items-center gap-2 rounded-md border border-ink/15 bg-white px-4 py-2.5 font-semibold text-ink"
-        >
-          <ImageIcon size={17} aria-hidden="true" />
-          渲染
-        </Link>
+        {options.length ? (
+          <>
+            <Link
+              href={`/projects/${projectId}/living`}
+              className="focus-ring inline-flex items-center gap-2 rounded-md border border-ink/15 bg-white px-4 py-2.5 font-semibold text-ink"
+            >
+              <ClipboardList size={17} aria-hidden="true" />
+              清单
+            </Link>
+            <Link
+              href={`/projects/${projectId}/renders`}
+              className="focus-ring inline-flex items-center gap-2 rounded-md border border-ink/15 bg-white px-4 py-2.5 font-semibold text-ink"
+            >
+              <ImageIcon size={17} aria-hidden="true" />
+              渲染
+            </Link>
+          </>
+        ) : null}
         <button
           type="button"
           onClick={async () => {

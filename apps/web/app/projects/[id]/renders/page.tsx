@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, Download, ImageIcon, WandSparkles } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { exportProject, getProject, renderOption, toAssetUrl } from "@/lib/api";
+import { notifyProjectUpdated } from "@/lib/projectEvents";
 import { LayoutOption, ProjectDetail, RenderAsset } from "@/lib/types";
 
 const disclaimer = "概念效果图仅用于灵感展示，尺寸和可施工性以平面图校正结果为准。";
@@ -53,6 +54,7 @@ export default function RendersPage({ params }: { params: { id: string } }) {
             }
           : current
       );
+      notifyProjectUpdated(projectId);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "渲染失败");
     } finally {
@@ -79,7 +81,7 @@ export default function RendersPage({ params }: { params: { id: string } }) {
   const renders: RenderAsset[] = project?.renders ?? [];
 
   return (
-    <PageShell projectId={projectId} current="renders" title="概念效果图">
+    <PageShell projectId={projectId} current="renders" title="概念效果图" currentStepReady>
       <div className="mb-5 rounded-md border border-clay/30 bg-white p-4 text-sm font-medium text-ink shadow-panel">
         {disclaimer}
       </div>

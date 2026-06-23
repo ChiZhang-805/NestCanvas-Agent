@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { ArrowRight, MessageSquareText, Send } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { createBrief, getProject } from "@/lib/api";
+import { notifyProjectUpdated } from "@/lib/projectEvents";
 import { DesignBrief } from "@/lib/types";
 
 export default function BriefPage({ params }: { params: { id: string } }) {
@@ -32,6 +33,7 @@ export default function BriefPage({ params }: { params: { id: string } }) {
     setError(null);
     try {
       setBrief(await createBrief(projectId, text));
+      notifyProjectUpdated(projectId);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "需求抽取失败");
     } finally {
@@ -40,7 +42,7 @@ export default function BriefPage({ params }: { params: { id: string } }) {
   }
 
   return (
-    <PageShell projectId={projectId} current="brief" title="结构化需求">
+    <PageShell projectId={projectId} current="brief" title="结构化需求" currentStepReady={Boolean(brief)}>
       <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <form onSubmit={submit} className="rounded-md border border-ink/10 bg-white p-5 shadow-panel">
           <label className="flex items-center gap-2 text-sm font-medium text-ink" htmlFor="brief-text">
@@ -50,7 +52,10 @@ export default function BriefPage({ params }: { params: { id: string } }) {
           <textarea
             id="brief-text"
             value={text}
-            onChange={(event) => setText(event.target.value)}
+            onChange={(event) => {
+              setText(event.target.value);
+              setBrief(null);
+            }}
             rows={9}
             className="focus-ring mt-3 w-full resize-y rounded-md border border-ink/15 px-3 py-2 leading-7"
           />

@@ -6,6 +6,7 @@ import { ArrowRight, Database, Save, Upload } from "lucide-react";
 import { FloorPlanSvg } from "@/components/FloorPlanSvg";
 import { PageShell } from "@/components/PageShell";
 import { getProject, patchFloorplan } from "@/lib/api";
+import { notifyProjectUpdated } from "@/lib/projectEvents";
 import { FloorPlan } from "@/lib/types";
 
 const roomTypes = [
@@ -26,6 +27,7 @@ function messageClass(message: string) {
 export default function FloorplanPage({ params }: { params: { id: string } }) {
   const projectId = params.id;
   const [floorplan, setFloorplan] = useState<FloorPlan | null>(null);
+  const [isSaved, setIsSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -33,6 +35,7 @@ export default function FloorplanPage({ params }: { params: { id: string } }) {
     getProject(projectId)
       .then((project) => {
         setFloorplan(project.floorplans.at(-1) ?? null);
+        setIsSaved(project.floorplans.length > 0);
       })
       .catch((caught) => {
         setMessage(caught instanceof Error ? caught.message : "加载户型失败");
@@ -46,6 +49,8 @@ export default function FloorplanPage({ params }: { params: { id: string } }) {
     try {
       const updated = await patchFloorplan(floorplan.id, floorplan);
       setFloorplan(updated);
+      setIsSaved(true);
+      notifyProjectUpdated(projectId);
       setMessage("已保存");
     } catch (caught) {
       setMessage(caught instanceof Error ? caught.message : "保存失败");
@@ -55,7 +60,7 @@ export default function FloorplanPage({ params }: { params: { id: string } }) {
   }
 
   return (
-    <PageShell projectId={projectId} current="floorplan" title="校正 2D 户型">
+    <PageShell projectId={projectId} current="floorplan" title="校正 2D 户型" currentStepReady={isSaved}>
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
         <FloorPlanSvg floorplan={floorplan} />
         <section className="rounded-md border border-ink/10 bg-white p-5 shadow-panel">
@@ -77,6 +82,7 @@ export default function FloorplanPage({ params }: { params: { id: string } }) {
                     ...floorplan,
                     scale_m_per_px: nextScale
                   });
+                  setIsSaved(false);
                 }}
                 className="focus-ring mt-2 w-full rounded-md border border-ink/15 px-3 py-2"
               />
@@ -90,6 +96,7 @@ export default function FloorplanPage({ params }: { params: { id: string } }) {
                         const rooms = [...floorplan.rooms];
                         rooms[index] = { ...room, room_type: event.target.value };
                         setFloorplan({ ...floorplan, rooms });
+                        setIsSaved(false);
                       }}
                       className="focus-ring mt-1 w-full rounded-md border border-ink/15 px-3 py-2"
                     >
