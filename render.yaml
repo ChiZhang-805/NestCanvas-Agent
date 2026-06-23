@@ -28,3 +28,5 @@ services:
         value: 20.18.1
       - key: NESTCANVAS_API_BASE_URL
         value: https://nestcanvas-api.onrender.com
+      - key: NEXT_PUBLIC_API_BASE_URL
+        value: https://nestcanvas-api.onrender.com

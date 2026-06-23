@@ -47,14 +47,21 @@ function isRenderWebRuntime() {
   return typeof window !== "undefined" && window.location.hostname.endsWith(".onrender.com");
 }
 
+function inferredRenderApiBase() {
+  if (!isRenderWebRuntime()) return "";
+  const { hostname, protocol } = window.location;
+  if (!hostname.includes("-web.")) return "";
+  return `${protocol}//${hostname.replace("-web.", "-api.")}`;
+}
+
 function candidateApiUrls(path: string) {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  const directUrl = apiUrl(normalizedPath);
+  const inferredApiBase = inferredRenderApiBase();
   const urls: string[] = [];
 
-  if (isRenderWebRuntime()) urls.push(normalizedPath);
-  urls.push(directUrl);
-  if (API_BASE) urls.push(normalizedPath);
+  if (API_BASE) urls.push(apiUrl(normalizedPath));
+  urls.push(normalizedPath);
+  if (inferredApiBase) urls.push(`${inferredApiBase}${normalizedPath}`);
 
   return [...new Set(urls)];
 }
@@ -76,11 +83,39 @@ function summarizeResponseError(status: number, statusText: string, contentType:
   return trimmed.length > 280 ? `${trimmed.slice(0, 280)}...` : trimmed;
 }
 
+function responseErrorMessage(response: Response, detail: string) {
+  let message = summarizeResponseError(
+    response.status,
+    response.statusText,
+    response.headers.get("content-type"),
+    detail
+  );
+  try {
+    const parsed = JSON.parse(detail) as { detail?: unknown };
+    if (typeof parsed.detail === "string") {
+      message = parsed.detail;
+    }
+  } catch {
+    // Keep the summarized response body when it is not JSON.
+  }
+  return message;
+}
+
+function shouldTryNextUrl(url: string, response: Response, remainingUrls: string[]) {
+  return (
+    isRenderWebRuntime() &&
+    url.startsWith("/") &&
+    response.status >= 500 &&
+    remainingUrls.some((candidate) => /^https?:\/\//i.test(candidate))
+  );
+}
+
 export function backendAssetUrl(path: string | null | undefined) {
   if (!path) return path;
   if (/^https?:\/\//i.test(path) || path.startsWith("data:")) return path;
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  return isRenderWebRuntime() ? normalizedPath : apiUrl(normalizedPath);
+  const assetBase = API_BASE || inferredRenderApiBase();
+  return assetBase ? `${assetBase}${normalizedPath}` : normalizedPath;
 }
 
 export function getStoredOpenAISettings() {
@@ -150,45 +185,37 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       ...init?.headers
     }
   };
-  let response: Response | null = null;
+  const urls = candidateApiUrls(path);
+  let lastError: Error | null = null;
 
-  for (const url of candidateApiUrls(path)) {
+  for (const [index, url] of urls.entries()) {
     try {
-      response = await fetch(url, requestInit);
-      break;
+      const response = await fetch(url, requestInit);
+      const contentType = response.headers.get("content-type");
+
+      if (!response.ok) {
+        const detail = await response.text();
+        const error = new Error(responseErrorMessage(response, detail));
+        if (shouldTryNextUrl(url, response, urls.slice(index + 1))) {
+          lastError = error;
+          continue;
+        }
+        throw error;
+      }
+
+      if (!contentType?.includes("application/json")) {
+        const detail = await response.text();
+        throw new Error(summarizeResponseError(response.status, response.statusText, contentType, detail));
+      }
+
+      return (await response.json()) as T;
     } catch (error) {
       if (!isFetchNetworkError(error)) throw error;
+      lastError = error instanceof Error ? error : new Error(networkErrorMessage());
     }
   }
 
-  if (!response) {
-    throw new Error(networkErrorMessage());
-  }
-
-  if (!response.ok) {
-    const detail = await response.text();
-    let message = summarizeResponseError(
-      response.status,
-      response.statusText,
-      response.headers.get("content-type"),
-      detail
-    );
-    try {
-      const parsed = JSON.parse(detail) as { detail?: unknown };
-      if (typeof parsed.detail === "string") {
-        message = parsed.detail;
-      }
-    } catch {
-      // Keep the raw response body when it is not JSON.
-    }
-    throw new Error(message);
-  }
-  const contentType = response.headers.get("content-type");
-  if (!contentType?.includes("application/json")) {
-    const detail = await response.text();
-    throw new Error(summarizeResponseError(response.status, response.statusText, contentType, detail));
-  }
-  return (await response.json()) as T;
+  throw lastError ?? new Error(networkErrorMessage());
 }
 
 export async function createProject(title: string) {
