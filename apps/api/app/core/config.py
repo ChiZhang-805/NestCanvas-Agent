@@ -1,9 +1,11 @@
 from functools import lru_cache
+import json
 from pathlib import Path
+from typing import Annotated, Any
 
 from pydantic import Field
 from pydantic import field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 ROOT_DIR = Path(__file__).resolve().parents[4]
@@ -25,7 +27,7 @@ class Settings(BaseSettings):
     openai_model_fast: str = Field(default="gpt-5.4-mini", alias="OPENAI_MODEL_FAST")
     openai_image_model: str = Field(default="gpt-image-2", alias="OPENAI_IMAGE_MODEL")
 
-    cors_origins: list[str] = Field(
+    cors_origins: Annotated[list[str], NoDecode] = Field(
         default=[
             "http://localhost:3000",
             "http://127.0.0.1:3000",
@@ -41,9 +43,21 @@ class Settings(BaseSettings):
 
     @field_validator("cors_origins", mode="before")
     @classmethod
-    def parse_cors_origins(cls, value: list[str] | str) -> list[str]:
+    def parse_cors_origins(cls, value: Any) -> list[str]:
         if isinstance(value, str):
-            return [origin.strip() for origin in value.split(",") if origin.strip()]
+            cleaned = value.strip()
+            if not cleaned:
+                return []
+            if cleaned.startswith("["):
+                try:
+                    parsed = json.loads(cleaned)
+                    if isinstance(parsed, list):
+                        return [str(origin).strip() for origin in parsed if str(origin).strip()]
+                except json.JSONDecodeError:
+                    pass
+            return [origin.strip() for origin in cleaned.split(",") if origin.strip()]
+        if isinstance(value, (list, tuple, set)):
+            return [str(origin).strip() for origin in value if str(origin).strip()]
         return value
 
     model_config = SettingsConfigDict(
